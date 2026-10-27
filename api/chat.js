@@ -12,20 +12,46 @@
  * hardcoded and never sent to the browser.
  *
  * ------------------------------------------------------------------
+ * TWO PAYLOAD SHAPES ARE ACCEPTED (top-level wins, then context.*)
+ *   The deployed frontend nests its fields under "context", while
+ *   the documented API uses top-level fields. Both work: every
+ *   field below is read from the top level first and falls back
+ *   to body.context.* only if the top-level value is missing.
+ *   Future frontends should prefer the top-level shape.
+ *
  * MODE 1 — "explain" (default, backward compatible)
  *   The tutor on the results screen. Used AFTER a test is finished.
- *   Request  (POST, JSON):
+ *   Request  (POST, JSON) — top-level shape:
  *     { question, options, correctAnswers, userChoice, message }
  *     ("mode" may be omitted, or sent as "explain")
+ *   Request  (POST, JSON) — context shape (deployed frontend):
+ *     { message, history,
+ *       context: { question, options, correctAnswers,
+ *                  userAnswers } }
+ *     - context.options are already labelled ("A. Paris", ...) —
+ *       the label is stripped before re-labelling, never doubled.
+ *     - context.correctAnswers are full strings ("C. Paris") —
+ *       the leading letter (A–D) is extracted for the answer key.
+ *     - context.userAnswers may be full strings ("A. Berlin"),
+ *       bare letters ("B"), or indices (0, 1, ...) — all are
+ *       converted to a readable choice for the prompt.
+ *     userChoice is also read from context.userChoice.
  *   Success  (200, JSON): { reply }
  *
  * MODE 2 — "chat" (ask about the uploaded content)
  *   For a file that contains study material / notes / a chapter —
  *   not just questions. Answers come ONLY from that content.
- *   Request  (POST, JSON):
+ *   Request  (POST, JSON) — top-level shape:
  *     { mode: "chat", content, message }
  *     - content: the text extracted from the user's uploaded file
+ *       (aliases: text, fileContent, documentText)
  *     - message: the user's question about that content
+ *   Request  (POST, JSON) — context shape (deployed frontend):
+ *     { mode: "chat", message, history,
+ *       context: { sourceName, text } }
+ *     Content is read from content / text / fileContent /
+ *     documentText, then context.text / context.content /
+ *     context.fileContent.
  *   Success  (200, JSON): { reply }
  *     plus { truncated: true } if the content was cut to the limit.
  *   If the answer is not in the content, the reply says so clearly
@@ -37,6 +63,9 @@
  *   Request  (POST, JSON):
  *     { mode: "generate", content, count }
  *     - content: the text extracted from the user's uploaded file
+ *       (text / fileContent / documentText and context.text /
+ *       context.content / context.fileContent are also accepted;
+ *       the deployed frontend sends top-level "text")
  *     - count:   how many questions to make (1–20, default 5)
  *   Success  (200, JSON):
  *     { questions: [
@@ -148,15 +177,154 @@ function asList(value) {
   return (Array.isArray(value) ? value : [value]).map(String);
 }
 
+function ctxOf(body) {
+  const c = body && body.context;
+  return c && typeof c === "object" && !Array.isArray(c) ? c : {};
+}
+
+// First non-empty string among the given values, else "".
+function firstString(...vals) {
+  for (const v of vals) {
+    if (typeof v === "string" && v.trim()) return v;
+  }
+  return "";
+}
+
+// Content for chat/generate: top-level fields take precedence,
+// then context.* fallbacks. Only an all-empty result is "missing".
 function getContent(body) {
-  const raw =
-    typeof body.content === "string" ? body.content :
-    typeof body.fileContent === "string" ? body.fileContent :
-    typeof body.documentText === "string" ? body.documentText :
-    typeof body.text === "string" ? body.text : "";
+  const ctx = ctxOf(body);
+  const raw = firstString(
+    body.content, body.fileContent, body.documentText, body.text,
+    ctx.text, ctx.content, ctx.fileContent, ctx.documentText
+  );
   const text = raw.trim();
   if (text.length <= CONTENT_LIMIT) return { text, truncated: false };
   return { text: text.slice(0, CONTENT_LIMIT), truncated: true };
+}
+
+// Strip one leading option label ("A. ", "B) ", "C: ", "D - ")
+// so already-labelled options are never double-labelled.
+function stripLeadingLabel(s) {
+  return String(s == null ? "" : s)
+    .replace(/^\s*\(?[A-Ea-e]\s*[\)\.\:\-]\s+/, "")
+    .trim();
+}
+
+// Normalise an options value (array, or {A:.., B:..} map) into a
+// list of plain option texts with any labels removed.
+function normalizeOptions(raw) {
+  let arr = [];
+  if (Array.isArray(raw)) {
+    arr = raw;
+  } else if (raw && typeof raw === "object") {
+    const letterKeys = ["A", "B", "C", "D", "E"].filter(
+      (k) => k in raw || k.toLowerCase() in raw
+    );
+    if (letterKeys.length) {
+      arr = letterKeys.map((k) => (k in raw ? raw[k] : raw[k.toLowerCase()]));
+    } else {
+      arr = Object.keys(raw).sort().map((k) => raw[k]);
+    }
+  } else if (typeof raw === "string" && raw.trim()) {
+    arr = [raw];
+  }
+  return arr.map((o) => {
+    if (o && typeof o === "object") {
+      return stripLeadingLabel(String(o.text ?? o.value ?? "").trim());
+    }
+    return stripLeadingLabel(String(o == null ? "" : o).trim());
+  });
+}
+
+// Extract answer-key letters from letters, indices, or full
+// strings like "B. Paris". Falls back to the string itself when
+// no leading letter (A–D) can be read, per the contract.
+function normalizeCorrectAnswers(raw) {
+  if (raw == null || raw === "") return [];
+  const items = Array.isArray(raw) ? raw : [raw];
+  const out = [];
+  for (const item of items) {
+    if (typeof item === "number" && Number.isFinite(item)) {
+      if (item >= 0 && item <= 4) out.push(String.fromCharCode(65 + item));
+      continue;
+    }
+    if (item && typeof item === "object") {
+      if (typeof item.index === "number") {
+        out.push(String.fromCharCode(65 + item.index));
+        continue;
+      }
+      const s = String(item.text ?? item.value ?? item.label ?? "").trim();
+      if (!s) continue;
+      const m =
+        s.match(/^\s*\(?([A-Da-d])\s*[\)\.\:\-]/) ||
+        s.match(/^\s*\(?([A-Da-d])\s*$/);
+      out.push(m ? m[1].toUpperCase() : s);
+      continue;
+    }
+    const s = String(item).trim();
+    if (!s) continue;
+    // Pure letter list like "B, D" or "BD" (short, letters only).
+    if (/^[A-Da-d\s,;]+$/.test(s) && s.length <= 10) {
+      for (const ch of s.toUpperCase().replace(/[^A-D]/g, "")) out.push(ch);
+      continue;
+    }
+    const m =
+      s.match(/^\s*\(?([A-Da-d])\s*[\)\.\:\-]/) ||
+      s.match(/^\s*\(?([A-Da-d])\s*$/);
+    out.push(m ? m[1].toUpperCase() : s);
+  }
+  return [...new Set(out)];
+}
+
+// Convert userAnswers / userChoice (indices, bare letters, or
+// full strings like "A. Berlin") into readable choice strings,
+// expanding bare letters/indices with the option text.
+function normalizeUserChoice(raw, options) {
+  if (raw == null || raw === "") return [];
+  const items = Array.isArray(raw) ? raw : [raw];
+  const out = [];
+  for (const item of items) {
+    if (typeof item === "number" && Number.isFinite(item)) {
+      if (item >= 0 && item < options.length) {
+        out.push(`${String.fromCharCode(65 + item)}. ${options[item]}`);
+      } else if (item >= 0 && item <= 4) {
+        out.push(String.fromCharCode(65 + item));
+      }
+      continue;
+    }
+    if (item && typeof item === "object") {
+      if (typeof item.index === "number") {
+        const n = item.index;
+        if (n >= 0 && n < options.length) {
+          out.push(`${String.fromCharCode(65 + n)}. ${options[n]}`);
+        } else out.push(String.fromCharCode(65 + n));
+        continue;
+      }
+      const s = String(item.text ?? item.value ?? item.label ?? "").trim();
+      if (s) out.push(s);
+      continue;
+    }
+    const s = String(item).trim();
+    if (!s) continue;
+    if (/^\s*\(?[A-Da-d]\s*$/.test(s)) {
+      const letter = s.toUpperCase().replace(/[^A-D]/g, "");
+      const idx = letter.charCodeAt(0) - 65;
+      out.push(options[idx] ? `${letter}. ${options[idx]}` : letter);
+      continue;
+    }
+    if (/^\d+$/.test(s)) {
+      const n = parseInt(s, 10);
+      if (n >= 0 && n < options.length) {
+        out.push(`${String.fromCharCode(65 + n)}. ${options[n]}`);
+        continue;
+      }
+      out.push(s);
+      continue;
+    }
+    out.push(s); // already readable (e.g. "A. Berlin") — keep as-is
+  }
+  return out;
 }
 
 function formatOptions(options) {
@@ -164,20 +332,41 @@ function formatOptions(options) {
     .map((opt, i) => {
       const label = String.fromCharCode(65 + i);
       if (opt && typeof opt === "object") {
-        return `${opt.label || label}. ${opt.text ?? opt.value ?? ""}`.trim();
+        const t = stripLeadingLabel(
+          String(opt.text ?? opt.value ?? "").trim()
+        );
+        return `${label}. ${t}`.trim();
       }
-      return `${label}. ${String(opt)}`;
+      // Strip first so a labelled input ("A. Paris") is not
+      // double-labelled when re-labelled here.
+      return `${label}. ${stripLeadingLabel(String(opt))}`;
     })
     .join("\n");
 }
 
+// Render an answer-key entry readably: a bare letter gains its
+// option text ("C" -> "C. Paris"); fallback strings pass through.
+function describeAnswer(entry, options) {
+  const s = String(entry);
+  if (/^[A-D]$/.test(s)) {
+    const idx = s.charCodeAt(0) - 65;
+    return options[idx] ? `${s}. ${options[idx]}` : s;
+  }
+  return s;
+}
+
 function buildExplainPrompt({ question, options, correctAnswers, userChoice, message }) {
+  const correctDisplay = (correctAnswers || []).map((c) =>
+    describeAnswer(c, options)
+  );
   const lines = [
     `Question:\n${question}`,
     `\nOptions:\n${formatOptions(options)}`,
-    `\nCorrect answer(s): ${asList(correctAnswers).join(", ") || "(not provided)"}`,
+    `\nCorrect answer(s): ${correctDisplay.join(", ") || "(not provided)"}`,
   ];
-  const chosen = asList(userChoice);
+  const chosen = Array.isArray(userChoice)
+    ? userChoice.map(String)
+    : asList(userChoice);
   lines.push(
     chosen.length
       ? `\nUser's choice: ${chosen.join(", ")}`
@@ -317,14 +506,53 @@ function parseGenerated(text) {
 // --- mode handlers --------------------------------------------------
 
 async function handleExplain(req, res, apiKey, body) {
-  const question =
-    typeof body.question === "string" ? body.question.trim() : "";
-  const options = Array.isArray(body.options) ? body.options : [];
-  const correctAnswers = asList(body.correctAnswers);
+  const ctx = ctxOf(body);
+  // Top-level fields take precedence; context.* is the fallback.
+  const rawQuestion =
+    body.question !== undefined && body.question !== null && body.question !== ""
+      ? body.question
+      : ctx.question;
+  let question = "";
+  if (typeof rawQuestion === "string") question = rawQuestion.trim();
+  else if (rawQuestion && typeof rawQuestion === "object") {
+    question = String(
+      rawQuestion.text ?? rawQuestion.stem ?? rawQuestion.question ?? ""
+    ).trim();
+  }
+  const rawOptions =
+    Array.isArray(body.options) && body.options.length
+      ? body.options
+      : ctx.options;
+  const options = normalizeOptions(rawOptions).filter((o) => o !== "");
+  const rawCorrect =
+    body.correctAnswers !== undefined && body.correctAnswers !== null
+      ? body.correctAnswers
+      : body.correctAnswer !== undefined && body.correctAnswer !== null
+        ? body.correctAnswer
+        : ctx.correctAnswers !== undefined && ctx.correctAnswers !== null
+          ? ctx.correctAnswers
+          : ctx.correctAnswer;
+  const correctAnswers = normalizeCorrectAnswers(rawCorrect);
+  const rawUser =
+    body.userChoice !== undefined && body.userChoice !== null
+      ? body.userChoice
+      : body.userAnswers !== undefined && body.userAnswers !== null
+        ? body.userAnswers
+        : body.userAnswer !== undefined && body.userAnswer !== null
+          ? body.userAnswer
+          : ctx.userAnswers !== undefined && ctx.userAnswers !== null
+            ? ctx.userAnswers
+            : ctx.userChoice;
+  const userChoice =
+    ctx.userSkipped === true && (rawUser == null || rawUser === "")
+      ? []
+      : normalizeUserChoice(rawUser, options);
   const message =
     typeof body.message === "string" && body.message.trim()
       ? body.message.trim().slice(0, 2000)
-      : "Explain this question.";
+      : typeof ctx.message === "string" && ctx.message.trim()
+        ? ctx.message.trim().slice(0, 2000)
+        : "Explain this question.";
   if (!question) {
     sendJson(res, 400, { error: "Missing required field: question" });
     return;
@@ -341,7 +569,7 @@ async function handleExplain(req, res, apiKey, body) {
     { role: "system", content: EXPLAIN_PROMPT },
     { role: "user", content: buildExplainPrompt({
         question, options, correctAnswers,
-        userChoice: body.userChoice, message }) },
+        userChoice, message }) },
   ], { timeoutMs: 25000, maxTokens: 700, temperature: 0.4 });
   if (result.reply) sendJson(res, 200, { reply: result.reply });
   else sendJson(res, result.status, { error: result.detail });
@@ -349,8 +577,13 @@ async function handleExplain(req, res, apiKey, body) {
 
 async function handleChat(req, res, apiKey, body) {
   const { text: content, truncated } = getContent(body);
+  const ctx = ctxOf(body);
   const message =
-    typeof body.message === "string" ? body.message.trim().slice(0, 2000) : "";
+    typeof body.message === "string" && body.message.trim()
+      ? body.message.trim().slice(0, 2000)
+      : typeof ctx.message === "string"
+        ? ctx.message.trim().slice(0, 2000)
+        : "";
   if (!content) {
     sendJson(res, 400, { error: "Missing required field: content" });
     return;
@@ -395,7 +628,9 @@ async function handleGenerate(req, res, apiKey, body) {
     sendJson(res, 400, { error: "Missing required field: content" });
     return;
   }
-  let count = Number(body.count ?? body.numQuestions ?? 5);
+  let count = Number(
+    body.count ?? body.numQuestions ?? ctxOf(body).count ?? 5
+  );
   if (!Number.isFinite(count)) count = 5;
   count = Math.max(1, Math.min(MAX_GENERATE_COUNT, Math.floor(count)));
 
