@@ -1,0 +1,1762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+<meta name="color-scheme" content="light dark"/>
+<link rel="icon" href="data:,"/>
+<title>MCQ Test Maker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<style>
+:root{
+  --bg:#faf8f3; --bg2:#f1ede3; --card:#ffffff; --card2:#fffdf7; --ink:#101828; --muted:#667085; --line:#e6e0d1; --line2:#eaecf0;
+  --teal:#0f766e; --teal2:#115e59; --teal-light:#ccfbf1; --amber:#d97706; --amber-bg:#fef3c7; --green:#067647; --green-bg:#ecfdf3; --red:#b42318; --red-bg:#fef3f2; --yellow-bg:#fffaeb;
+  --radius:18px;
+  --shadow:0 10px 30px rgba(16,24,40,.08);
+  --btn-bg:#101828; --btn-fg:#ffffff;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0c1222; --bg2:#111827; --card:#141c2e; --card2:#182236; --ink:#f2f4f7; --muted:#98a2b3; --line:#26314a; --line2:#26314a; --teal:#2dd4bf; --teal2:#5eead4; --teal-light:#134e4a; --shadow:0 10px 30px rgba(0,0,0,.35); --green-bg:#052e16; --red-bg:#450a0a; --amber-bg:#451a03; --yellow-bg:#422006; --btn-bg:#f2f4f7; --btn-fg:#101828; }
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.5}
+h1,h2,h3{font-family:"Plus Jakarta Sans",Inter,sans-serif;line-height:.95;letter-spacing:-.02em;margin:0}
+a{color:var(--teal)}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px 48px}
+/* TOP STRIP */
+.topstrip{display:flex;justify-content:space-between;align-items:center;padding:18px 0 6px;font-size:13px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.topstrip b{color:var(--ink);text-transform:none;letter-spacing:-.01em;font-size:15px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);padding:6px 10px;border-radius:999px;font-size:12px;text-transform:none;letter-spacing:0;color:var(--ink)}
+.dot{width:8px;height:8px;border-radius:50%;background:#12b76a}
+/* VIEWS */
+.view{display:none}.view.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion: reduce){.view{animation:none}}
+/* HERO */
+.hero{padding:28px 0 22px;display:grid;grid-template-columns:1.15fr .85fr;gap:28px;align-items:start}
+@media(max-width:860px){.hero{grid-template-columns:1fr}}
+.hero h1{font-size:clamp(42px,6vw,72px);font-weight:800}
+.hero h1 em{font-style:normal;color:var(--teal);position:relative}
+.hero p.lead{font-size:18px;color:var(--muted);margin:16px 0 0;max-width:560px;line-height:1.6}
+.hero-stats{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;min-width:118px}
+.stat strong{display:block;font-size:20px;line-height:1}
+.stat span{font-size:12px;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+/* UPLOAD CARD */
+.upload-card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:18px;box-shadow:var(--shadow)}
+.drop{border:1.8px dashed #cbd5e1;border-radius:16px;padding:28px 18px;text-align:center;background:var(--card2);transition:.2s}
+.drop.drag{border-color:var(--teal);background:var(--teal-light)}
+.drop-icon{width:56px;height:56px;margin:0 auto 10px;border-radius:16px;background:var(--btn-bg);color:var(--btn-fg);display:grid;place-items:center;font-size:24px}
+.drop h3{font-size:18px;letter-spacing:-.01em}
+.drop p{color:var(--muted);font-size:14px;margin:6px 0 14px}
+.btn{border:0;border-radius:999px;padding:12px 18px;font-weight:700;font-size:14px;display:inline-flex;align-items:center;gap:8px;justify-content:center}
+.btn-primary{background:var(--btn-bg);color:var(--btn-fg)}.btn-primary:hover{opacity:.92}
+.btn-teal{background:var(--teal);color:#fff}
+@media(prefers-color-scheme:dark){
+  .btn-teal{color:#04211d}
+  .opt.selected .opt-letter{color:#04211d}
+  .pbtn.answered{color:#04211d}
+}
+.btn-outline{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn-ghost{background:var(--bg2);color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.filetypes{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.ft{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--line);padding:5px 8px;border-radius:999px;background:#fff;color:#475467}
+@media(prefers-color-scheme:dark){.ft{background:#1f2937;color:#d0d5dd}}
+.or{display:flex;align-items:center;gap:12px;margin:16px 0;color:var(--muted);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}.or:before,.or:after{content:"";height:1px;background:var(--line);flex:1}
+textarea{width:100%;border:1px solid var(--line);border-radius:12px;padding:12px;font-family:"JetBrains Mono",monospace;font-size:13px;line-height:1.6;background:var(--bg);color:var(--ink);resize:vertical}
+.sample-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+/* GRID BELOW HERO */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:6px}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+.card h3{font-size:18px;margin-bottom:8px}
+.card p,.card li{color:var(--muted);font-size:14px;line-height:1.6}
+.card ul{margin:8px 0 0;padding-left:18px}
+pre.example{background:#101828;color:#e4e7ec;padding:16px;border-radius:12px;overflow:auto;font-size:12.5px;line-height:1.7;font-family:"JetBrains Mono",monospace;white-space:pre-wrap}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+@media(max-width:760px){.steps{grid-template-columns:1fr}}
+.step{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.step-num{width:32px;height:32px;border-radius:50%;background:var(--amber-bg);color:var(--amber);display:grid;place-items:center;font-weight:800;font-size:14px;margin-bottom:10px;border:1px solid #fde68a}
+.step b{display:block;font-size:15px}.step p{margin:4px 0 0;color:var(--muted);font-size:13.5px;line-height:1.55}
+/* PARSED PREVIEW */
+#previewSection{display:none;margin-top:18px}
+.preview-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.badge{display:inline-flex;padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.badge-green{background:var(--green-bg);color:var(--green);border:1px solid #a6f4c5}
+.badge-amber{background:var(--yellow-bg);color:#b54708;border:1px solid #fedf89}
+.qpreview{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;background:var(--card)}
+.qpreview p{margin:0 0 8px;font-weight:600;font-size:14.5px}
+.qpreview ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media(max-width:600px){.qpreview ul{grid-template-columns:1fr}}
+.qpreview li{font-size:13.5px;color:var(--muted);padding:7px 9px;border:1px solid var(--line2);border-radius:8px}
+.qpreview li.correct{border-color:#a6f4c5;background:var(--green-bg);color:var(--ink);font-weight:600}
+.settings{display:flex;gap:14px;flex-wrap:wrap;align-items:end;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:14px 0}
+.field label{display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field select{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600}
+.check{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;padding-bottom:10px}
+.check input{width:18px;height:18px;accent-color:var(--teal)}
+.error-box{display:none;background:var(--red-bg);border:1px solid #fecdca;color:var(--red);padding:12px 14px;border-radius:12px;font-size:14px;margin-top:12px}
+/* TEST */
+.test-top{position:sticky;top:0;z-index:20;background:color-mix(in srgb, var(--bg) 92%, transparent);backdrop-filter:blur(10px);padding:14px 0 10px;border-bottom:1px solid var(--line);margin-bottom:18px}
+.test-meta{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.timer{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:18px;background:var(--card);border:1px solid var(--line);padding:8px 12px;border-radius:999px}
+.progress{height:8px;background:var(--line2);border-radius:999px;overflow:hidden;margin-top:12px}
+.progress i{display:block;height:100%;background:var(--teal);transition:width .3s}
+.test-layout{display:grid;grid-template-columns:1fr 300px;gap:18px;align-items:start}
+@media(max-width:860px){.test-layout{grid-template-columns:1fr}.test-top{position:static}.palette{position:static !important}}
+.qcard{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:var(--shadow)}
+.qmeta{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.qcard h2{font-size:21px;line-height:1.45;letter-spacing:-.01em;font-weight:700;white-space:pre-wrap;word-break:break-word}
+.qpreview p,.review-item p.q{white-space:pre-wrap;word-break:break-word}
+.options{margin-top:18px;display:grid;gap:10px}
+.opt{width:100%;text-align:left;display:flex;gap:12px;align-items:flex-start;padding:14px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);font-size:15px;line-height:1.5}
+.opt:hover{border-color:var(--teal)}
+.opt.selected{border-color:var(--teal);background:var(--teal-light)}
+.opt-letter{flex:0 0 32px;width:32px;height:32px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:800;font-size:13px;background:#fff;color:#344054}
+@media(prefers-color-scheme:dark){.opt-letter{background:#1f2937;color:#e5e7eb}}
+.opt.selected .opt-letter{background:var(--teal);color:#fff;border-color:var(--teal)}
+.opt.multi .opt-letter{border-radius:8px}
+.opt .opt-check{margin-left:auto;flex:0 0 auto;font-weight:800;color:var(--teal);opacity:0}
+.opt.selected .opt-check{opacity:1}
+.multi-hint{font-size:13px;font-weight:700;color:var(--teal);background:var(--teal-light);border:1px solid var(--teal);border-radius:999px;padding:6px 10px;display:inline-flex}
+.controls{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:20px;padding-top:16px;border-top:1px solid var(--line)}
+.palette{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;position:sticky;top:92px}
+.palette h4{margin:0 0 10px;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.pbtn{aspect-ratio:1;border-radius:10px;border:1px solid var(--line);background:var(--bg);font-weight:700;font-size:13px;color:var(--ink)}
+.pbtn.answered{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pbtn.current{outline:2px solid var(--ink);outline-offset:1px}
+.pbtn.marked{background:var(--amber);color:#fff;border-color:var(--amber)}
+.legend{margin-top:12px;display:grid;gap:6px;font-size:12.5px;color:var(--muted)}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block;vertical-align:-1px;margin-right:6px}
+/* RESULT */
+.score-hero{display:grid;grid-template-columns:280px 1fr;gap:18px;align-items:stretch;margin-top:18px}
+@media(max-width:760px){.score-hero{grid-template-columns:1fr}}
+.score-card{background:var(--ink);color:#fff;border-radius:20px;padding:22px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center}
+@media(prefers-color-scheme:dark){.score-card{background:#fff;color:#101828}}
+.score-ring{width:150px;height:150px;transform:rotate(-90deg)}
+.score-ring circle{fill:none;stroke-width:10;stroke-linecap:round}
+.ring-bg{stroke:rgba(255,255,255,.18)} @media(prefers-color-scheme:dark){.ring-bg{stroke:rgba(0,0,0,.12)}}
+.ring-fg{stroke:#2dd4bf}
+.score-num{font-size:42px;font-weight:800;line-height:1;margin-top:-96px}
+.score-sub{margin-top:52px;font-size:13px;opacity:.8;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:600px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+.stat2{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+.stat2 strong{font-size:26px;display:block;line-height:1}.stat2 span{font-size:12px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted)}
+.review-item{border:1px solid var(--line);border-radius:16px;padding:16px;background:var(--card);margin-bottom:10px}
+.review-item.correct{border-left:5px solid #12b76a}.review-item.wrong{border-left:5px solid #f04438}.review-item.skipped{border-left:5px solid #f79009}
+.review-item p.q{font-weight:700;margin:0 0 8px}
+.ansline{font-size:14px;margin:4px 0}.ansline b{font-weight:700}
+.hidden-file{display:none}
+.notice{font-size:13px;color:var(--muted);margin-top:8px}
+/* AI TUTOR (results only) */
+.ai-card{margin-top:18px;padding:22px;border:1.5px solid var(--teal)}
+.ai-card h3{font-size:22px;margin:0}
+.ai-setup{font-size:13px;color:var(--muted);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;line-height:1.6;margin-top:12px}
+.ai-setup code{font-family:"JetBrains Mono",monospace;font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:1px 5px;color:var(--ink)}
+.ai-select{width:100%;padding:11px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-weight:600;font-size:14px;margin-top:6px}
+.ai-ctx{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.55}
+.ai-quick{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.ai-quick .btn{font-size:13px;padding:9px 13px}
+.ai-messages{margin-top:14px;height:320px;overflow-y:auto;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.ai-msg{max-width:88%;padding:10px 12px;border-radius:14px;font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.ai-msg.user{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:4px}
+@media(prefers-color-scheme:dark){.ai-msg.user{color:#04211d}}
+.ai-msg.assistant{align-self:flex-start;background:var(--card);border:1px solid var(--line);color:var(--ink);border-bottom-left-radius:4px}
+.ai-msg.error{align-self:stretch;max-width:100%;background:var(--red-bg);border:1px solid #fecdca;color:var(--red);font-weight:600}
+.ai-msg.loading{align-self:flex-start;color:var(--muted);font-style:italic;background:transparent;border:1px dashed var(--line)}
+.ai-input-row{display:flex;gap:8px;margin-top:12px}
+.ai-input-row input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:12px 16px;font-size:14px;font-family:inherit;background:var(--bg);color:var(--ink)}
+.ai-error-box{display:none;background:var(--red-bg);border:1px solid #fecdca;color:var(--red);padding:12px 14px;border-radius:12px;font-size:13.5px;margin-top:12px;line-height:1.55}
+.ai-float{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:80;box-shadow:0 8px 24px rgba(16,24,40,.22);min-width:56px;height:56px;border-radius:999px;padding:0 18px 0 14px;font-size:15px;font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap}
+.ai-float .qm-ico{font-size:22px;line-height:1}
+@media(max-width:420px){.ai-float{padding:0 14px 0 12px;font-size:14px}}
+.ai-float-panel{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:80;width:min(340px,calc(100vw - 36px));background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 40px rgba(16,24,40,.22);padding:18px;display:none}
+.ai-float-panel.open{display:block}
+.ai-float-panel h4{margin:0 0 6px;font-size:16px}
+.ai-float-panel p{margin:0 0 10px;color:var(--muted);font-size:13.5px;line-height:1.6}
+.ai-float-panel .close-x{position:absolute;top:8px;right:10px;background:transparent;border:0;font-size:20px;line-height:1;color:var(--muted);padding:6px}
+/* MINI CHAT — compact floating window anchored bottom-right, above the AI button */
+.mini-chat{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:90;width:min(360px,calc(100vw - 36px));max-height:min(560px,calc(100dvh - 110px));background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 44px rgba(16,24,40,.24);display:none;flex-direction:column;overflow:hidden}
+.mini-chat.open{display:flex}
+.mini-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;padding:13px 14px 10px;border-bottom:1px solid var(--line);background:var(--card2);flex:0 0 auto}
+.mini-head h4{margin:0;font-size:16px;line-height:1.2;color:var(--ink)}
+.mini-head p{margin:3px 0 0;font-size:12px;line-height:1.45;color:var(--muted)}
+.mini-head-actions{display:flex;gap:4px;flex:0 0 auto}
+.mini-icon-btn{width:32px;height:32px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:18px;line-height:1;display:grid;place-items:center;padding:0}
+.mini-messages{flex:1 1 auto;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--bg);min-height:180px}
+.mini-msg{max-width:88%;padding:9px 11px;border-radius:14px;font-size:13.5px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.mini-msg.user{align-self:flex-end;background:var(--teal);color:#fff;border-bottom-right-radius:4px}
+@media(prefers-color-scheme:dark){.mini-msg.user{color:#04211d}}
+.mini-msg.assistant{align-self:flex-start;background:var(--card);border:1px solid var(--line);color:var(--ink);border-bottom-left-radius:4px}
+.mini-msg.error{align-self:stretch;max-width:100%;background:var(--red-bg);border:1px solid #fecdca;color:var(--red);font-weight:600}
+.mini-msg.loading{align-self:flex-start;color:var(--muted);font-style:italic;background:transparent;border:1px dashed var(--line)}
+.mini-quick{display:flex;gap:6px;flex-wrap:wrap;padding:9px 12px 0;background:var(--bg)}
+.mini-quick button{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:7px 10px;font-size:12px;font-weight:700}
+.mini-quick button.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+@media(prefers-color-scheme:dark){.mini-quick button.primary{color:#04211d}}
+.mini-wait{margin:9px 12px 0;padding:8px 10px;border-radius:10px;background:var(--yellow-bg);border:1px solid #fedf89;color:var(--ink);font-size:12.5px;line-height:1.5;display:none}
+.mini-input-row{display:flex;gap:7px;padding:10px 12px 12px;background:var(--bg);flex:0 0 auto}
+.mini-input-row input{flex:1;min-width:0;border:1px solid var(--line);border-radius:999px;padding:11px 13px;font-size:13.5px;font-family:inherit;background:var(--card);color:var(--ink)}
+.mini-input-row .btn{padding:11px 14px;font-size:13px;flex:0 0 auto}
+@media(max-width:420px){.mini-chat{right:12px;bottom:calc(82px + env(safe-area-inset-bottom,0px));width:calc(100vw - 24px)}}
+.ai-gen-row{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-top:12px}
+.ai-gen-box{margin-top:16px;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:16px}
+pre.ai-backend{background:#101828;color:#e4e7ec;padding:14px;border-radius:12px;overflow:auto;font-size:11.5px;line-height:1.6;font-family:"JetBrains Mono",monospace;white-space:pre-wrap;margin-top:10px;text-align:left}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topstrip"><span>✦ Interactive Practice</span><span class="pill"><span class="dot"></span> No sign-up • Runs in your browser</span></div>
+
+  <!-- HOME -->
+  <section id="view-home" class="view active">
+    <div class="hero">
+      <div>
+        <h1>Turn your<br>question file<br>into a <em>real test.</em></h1>
+        <p class="lead">Upload a PDF, Word document or TXT file full of multiple-choice questions, and get an interactive question paper instantly — timed, scored, and reviewed question by question.</p>
+        <div class="hero-stats">
+          <div class="stat"><strong>PDF · Word · TXT</strong><span>Supported</span></div>
+          <div class="stat"><strong>Instant</strong><span>Auto scoring</span></div>
+          <div class="stat"><strong>Local parsing</strong><span>Questions built on-device</span></div>
+        </div>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><b>Upload your file</b><p>Drop a PDF, Word (.docx) or TXT with questions, options &amp; answers.</p></div>
+          <div class="step"><div class="step-num">2</div><b>Take the test</b><p>One question at a time, with timer, palette &amp; mark-for-review.</p></div>
+          <div class="step"><div class="step-num">3</div><b>See your result</b><p>Score, accuracy, time taken and a full answer review.</p></div>
+        </div>
+      </div>
+
+      <div class="upload-card" id="uploadCard">
+        <div class="drop" id="dropZone">
+          <div class="drop-icon">↑</div>
+          <h3>Upload your MCQ file</h3>
+          <p>Drag &amp; drop here, or browse from your device.<br>We’ll read it and show a preview — the test only starts when you press Start test.</p>
+          <button class="btn btn-primary" id="browseBtn">Choose file</button>
+          <input type="file" id="fileInput" class="hidden-file" accept=".pdf,.txt,.docx,.doc,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msword">
+          <div class="filetypes"><span class="ft">PDF</span><span class="ft">Word · DOCX</span><span class="ft">TXT</span><span class="ft">Max ~10 MB</span></div>
+          <div id="fileInfo" style="margin-top:12px;font-size:13px;font-weight:600"></div>
+          <div id="parseStatus" style="font-size:13px;color:var(--muted);margin-top:4px"></div>
+        </div>
+        <div class="error-box" id="errorBox"></div>
+
+        <div class="or">or</div>
+        <label style="font-weight:700;font-size:14px;display:block;margin-bottom:8px">Paste questions as text</label>
+        <textarea id="pasteInput" rows="5" placeholder="Paste your questions here in the format shown below, then click Parse text…"></textarea>
+        <div class="sample-row">
+          <button class="btn btn-teal" id="parsePasteBtn">Parse pasted text →</button>
+          <button class="btn btn-outline" id="sampleBtn">Try sample test (12 Qs)</button>
+          <button class="btn btn-outline" id="inlineSampleBtn">Try sample — ✓ Correct answer style</button>
+        </div>
+        <p class="notice">Parsing runs entirely in this browser — nothing is uploaded to a server to build your test. The optional QuizMate features below are the one exception: only when you click “Generate MCQs” or send a chat message is the file's text sent to the <code style="font-family:'JetBrains Mono',monospace;font-size:12px">/api/chat</code> backend.</p>
+      </div>
+    </div>
+
+    <!-- PREVIEW / START -->
+    <div id="previewSection">
+      <div class="card" style="padding:22px">
+        <div class="preview-head">
+          <div>
+            <h2 style="font-size:26px">Your test is ready</h2>
+            <p style="color:var(--muted);margin:6px 0 0" id="previewSummary"></p>
+          </div>
+          <span class="badge badge-green" id="previewBadge"></span>
+        </div>
+        <div id="waitNotice" style="background:var(--yellow-bg);border:1px solid #fedf89;border-radius:12px;padding:11px 13px;font-size:13.5px;line-height:1.55;margin-bottom:12px"><b>✓ Ready — waiting for you.</b> Uploading does <b>not</b> start the test automatically. Review the preview below, then press <b>“Start test →”</b> when you’re ready — or open QuizMate 💬 (bottom-right) and type <b>“start test”</b>.</div>
+        <div class="settings">
+          <div class="field"><label>Time limit</label>
+            <select id="timeLimit"><option value="0">No limit (timer counts up)</option><option value="10">10 minutes</option><option value="20">20 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes</option></select>
+          </div>
+          <label class="check"><input type="checkbox" id="shuffleQ" checked> Shuffle questions</label>
+          <label class="check"><input type="checkbox" id="shuffleO"> Shuffle options</label>
+          <button class="btn btn-teal" id="startBtn" style="margin-left:auto;padding:14px 22px;font-size:15px">Start test →</button>
+        </div>
+        <div id="parseStats" style="display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px"></div>
+        <div id="previewList"></div>
+        <p class="notice" id="previewWarn"></p>
+        <details id="skippedDetails" style="display:none;margin-top:10px"><summary style="font-weight:700;font-size:14px;cursor:pointer">Unparsed / skipped content</summary><pre id="skippedList" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;font-size:12px;white-space:pre-wrap;overflow:auto;margin-top:8px"></pre></details>
+      </div>
+    </div>
+
+    <!-- AI CONTENT — chat about the loaded file + generate MCQs from study content (home only, never during a test) -->
+    <div id="aiContentSection" style="display:none;margin-top:18px">
+      <div class="card ai-card">
+        <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+          <div>
+            <h3>✦ QuizMate — your AI tutor · your file, your questions</h3>
+            <p style="color:var(--muted);font-size:14px;margin:6px 0 0;line-height:1.6;max-width:640px">QuizMate can read the file you just loaded. Ask it questions about the content below — or, when the file is study material (notes, a chapter, an article) rather than a ready-made question paper, let QuizMate write a brand-new MCQ test from that content.</p>
+          </div>
+          <span class="badge badge-green">Before the test</span>
+        </div>
+        <div class="ai-setup"><b>Setup note:</b> QuizMate uses the same backend as the post-test tutor — a small function at <code>/api/chat</code> on Vercel reading <code>GROQ_API_KEY</code> from the host's environment variables (the key is never in this page). Until that function is deployed you'll see a clear “backend not configured” message — uploading files and taking parsed tests keep working either way. These panels live on this home screen only, so they're never available during a test.</div>
+
+        <div class="ai-gen-box" id="aiGenerateBlock" style="display:none">
+          <b style="font-size:16px">📝 Generate MCQs from this content</b>
+          <p id="aiGenerateMsg" style="color:var(--muted);font-size:14px;margin:6px 0 0;line-height:1.6"></p>
+          <div class="ai-gen-row">
+            <div class="field"><label>How many questions?</label>
+              <select id="aiGenCount"><option value="5">5 questions</option><option value="10" selected>10 questions</option><option value="15">15 questions</option><option value="20">20 questions</option></select>
+            </div>
+            <button class="btn btn-teal" id="aiGenBtn" style="padding:12px 20px">✦ Generate MCQs</button>
+          </div>
+          <div id="aiGenStatus" style="font-size:13.5px;color:var(--muted);margin-top:10px"></div>
+          <div class="ai-error-box" id="aiGenError"></div>
+        </div>
+
+        <b style="display:block;font-size:16px;margin-top:18px">💬 Chat about this content</b>
+        <p class="notice" id="aiContentNotice" style="margin-top:4px"></p>
+        <div class="ai-messages" id="aiContentMessages" style="height:260px" aria-live="polite"></div>
+        <div class="ai-error-box" id="aiContentError"></div>
+        <div class="ai-input-row">
+          <input type="text" id="aiContentInput" placeholder="Ask about the loaded content… e.g. Summarise the key points" autocomplete="off">
+          <button class="btn btn-teal" id="aiContentSendBtn">Send →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:18px">
+      <div class="card">
+        <h3>What format should my file be in?</h3>
+        <p>Works with <b>PDF, Word (.docx) and TXT</b> files — the same layout rules apply in all of them. Two answer styles are supported — use either, or mix them in one file. Questions can be numbered <b>or unnumbered</b>, and can span multiple lines including code / technical lines before the actual question sentence — all of it is kept as the question text. For Word, just type or paste your questions as normal paragraphs in a .docx file (older .doc files should be re-saved as .docx first).</p>
+        <ul>
+          <li><b>Style 1 — inline marker (no Answer line needed):</b> put <b>✓ Correct answer</b> at the end of the correct option. Variants <b>✓</b>, <b>✔</b>, <b>Correct answer</b>, <b>[Correct]</b> also work. The marker is stripped from the option shown in the test.</li>
+          <li><b>Multiple answers:</b> some questions can have <b>more than one correct answer</b>. Mark <b>every</b> correct option with ✓, or list them on the answer line — e.g. <b>Answer: A, C</b> or <b>Answers: B and D</b>. In the test those questions say “Select all that apply” and let you pick multiple options. You score the point only when you pick exactly the correct set (no missing, no extra).</li>
+          <li><b>Style 2 — answer line:</b> <b>Answer: B</b>, <b>Ans: (C)</b>, or <b>Correct Answer: A</b> on its own line — use commas / “and” for multiple answers.</li>
+          <li>Options: <b>A.</b> , <b>A)</b> , <b>(A)</b> — long / multi-line options are joined automatically.</li>
+          <li>No answer marker at all? The question is still included, marked <b>unscored</b> — it won’t affect your score.</li>
+          <li>Explanations after <b>Explanation:</b> are kept for review.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Example — inline ✓ style</h3>
+        <pre class="example">A data analyst runs the following on a 25 GB table:
+DROP TABLE IF EXISTS sales.orders;
+Afterwards, SHOW TABLES no longer lists sales.orders, but the underlying Parquet files are still present. Which statement best explains this behaviour?
+A.  Tables larger than 10 GB always retain their files when dropped.
+B.  The table was an external (unmanaged) table, so DROP TABLE removes the metadata while the data files are left untouched.   ✓ Correct answer
+C.  Unity Catalog requires VACUUM before files are deleted.
+D.  DROP TABLE always preserves files unless CASCADE is supplied.
+
+An “Answer: B” line instead of the ✓ marker also works.</pre>
+        <button class="btn btn-ghost" id="useExampleBtn" style="margin-top:12px">Load the full ✓-style sample ↑</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEST -->
+  <section id="view-test" class="view">
+    <div class="test-top">
+      <div class="test-meta">
+        <div><strong id="testTitle" style="font-size:18px">Practice Test</strong><div style="color:var(--muted);font-size:13px" id="testSub"></div></div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="pill" id="answeredPill">0 answered</span><span class="timer" id="timerEl">00:00</span><button class="btn btn-primary" id="submitTopBtn">Submit test</button></div>
+      </div>
+      <div class="progress"><i id="progressBar" style="width:0%"></i></div>
+    </div>
+    <div class="test-layout">
+      <div>
+        <div class="qcard">
+          <div class="qmeta"><span class="badge badge-green" id="qNumBadge">Question 1</span><span class="badge badge-amber" id="markedBadge" style="display:none">Marked for review</span><span class="multi-hint" id="multiHint" style="display:none">☑ Multiple answers — select all that apply</span></div>
+          <h2 id="qText"></h2>
+          <p id="multiNote" style="display:none;color:var(--muted);font-size:13.5px;margin:8px 0 0">This question has more than one correct answer. Tap options to select / deselect them — pick exactly the correct set to score.</p>
+          <div class="options" id="optionsEl"></div>
+          <div class="controls">
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-outline" id="prevBtn">← Previous</button><button class="btn btn-ghost" id="clearBtn">Clear answer</button><button class="btn btn-ghost" id="markBtn">☆ Mark for review</button></div>
+            <button class="btn btn-teal" id="nextBtn">Next →</button>
+          </div>
+        </div>
+        <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:14px">Use the palette to jump to any question. You can change answers any time before submitting.</p>
+      </div>
+      <aside class="palette">
+        <h4>Question palette</h4>
+        <div class="pgrid" id="paletteEl"></div>
+        <div class="legend"><div><i style="background:var(--teal)"></i> Answered</div><div><i style="background:var(--amber)"></i> Marked for review</div><div><i style="background:var(--bg);border:1px solid var(--line)"></i> Not answered</div></div>
+        <button class="btn btn-primary" id="submitBtn2" style="width:100%;margin-top:16px">Submit test</button>
+        <button class="btn btn-outline" id="quitBtn" style="width:100%;margin-top:8px">Quit &amp; back to home</button>
+      </aside>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="view-result" class="view">
+    <div style="padding-top:22px">
+      <span class="pill">✓ Test completed</span>
+      <h2 style="font-size:clamp(36px,5vw,56px);margin-top:12px" id="resultHeadline">Great effort!</h2>
+      <p style="color:var(--muted);font-size:17px;margin:8px 0 0" id="resultSub"></p>
+    </div>
+    <div class="score-hero">
+      <div class="score-card">
+        <svg class="score-ring" viewBox="0 0 160 160"><circle class="ring-bg" cx="80" cy="80" r="68"></circle><circle class="ring-fg" id="ringFg" cx="80" cy="80" r="68" stroke-dasharray="427" stroke-dashoffset="427"></circle></svg>
+        <div class="score-num" id="scorePct">0%</div>
+        <div class="score-sub" id="scoreFraction"></div>
+      </div>
+      <div>
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="card" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+          <div><b>What next?</b><p style="margin:2px 0 0">Retake the same test, download your result summary, or load a new file.</p></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-teal" id="retakeBtn">↻ Retake test</button><button class="btn btn-outline" id="downloadBtn">↓ Download summary</button><button class="btn btn-primary" id="newTestBtn">New file</button></div>
+        </div>
+      </div>
+    </div>
+    <!-- AI TUTOR — results only, never shown during an active test -->
+    <div class="card ai-card" id="aiTutorCard">
+      <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:flex-start">
+        <div>
+          <h3>💬 QuizMate — your AI tutor · explain my results</h3>
+          <p style="color:var(--muted);font-size:14px;margin:6px 0 0;line-height:1.6;max-width:640px">Finished the test? Pick any question below and ask QuizMate to explain it — why the correct answer is right, and why your choice was wrong. QuizMate is only available here, after you submit, so it can never give away answers during a test.</p>
+        </div>
+        <span class="badge badge-green">Post-test only</span>
+      </div>
+      <div class="ai-setup"><b>Setup note:</b> QuizMate talks to a small backend function at <code>/api/chat</code> on Vercel (<code>api/chat.js</code>, reading <code>GROQ_API_KEY</code> from the host's environment variables — the key is never in this page). That function is a <b>separate deploy file you add on Vercel</b>. Until it's deployed, sending a message below shows a clear “backend not configured” message — your test and results keep working normally either way.</div>
+
+      <label style="font-weight:700;font-size:13px;display:block;margin-top:16px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)" for="aiQSelect">Question to ask about</label>
+      <select class="ai-select" id="aiQSelect"></select>
+      <div class="ai-ctx" id="aiContextPreview"></div>
+
+      <div class="ai-quick">
+        <button class="btn btn-teal ai-quick-btn" data-ai-prompt="Explain this question and why the correct answer is correct, in simple words.">Explain this question</button>
+        <button class="btn btn-outline ai-quick-btn" data-ai-prompt="Why is the correct answer correct for this question? Explain the concept behind it.">Why is the correct answer right?</button>
+        <button class="btn btn-outline ai-quick-btn" data-ai-prompt="Why was my choice wrong for this question? What is the difference between my choice and the correct answer?">Why was my choice wrong?</button>
+      </div>
+
+      <div class="ai-messages" id="aiMessages" aria-live="polite"></div>
+      <div class="ai-error-box" id="aiErrorBox"></div>
+      <div class="ai-input-row">
+        <input type="text" id="aiInput" placeholder="Ask about the selected question… e.g. Explain this like I'm a beginner" autocomplete="off">
+        <button class="btn btn-teal" id="aiSendBtn">Send →</button>
+      </div>
+      <p class="notice">Only the selected question — its text, options, the correct answer(s) and your choice — is sent to <code style="font-family:'JetBrains Mono',monospace;font-size:12px">/api/chat</code> along with your message. Your whole file and your other questions are not sent.</p>
+
+      <details style="margin-top:10px">
+        <summary style="font-weight:700;font-size:14px;cursor:pointer">For Yash: the Vercel backend file to add (api/chat.js)</summary>
+        <p style="color:var(--muted);font-size:13.5px;line-height:1.6;margin:8px 0 0">Deploy this page on Vercel together with this one function file, then set <b>GROQ_API_KEY</b> in Vercel → Project → Settings → Environment Variables and redeploy. This page sends <b>POST { mode, message, context, text, count, history }</b> — <code>mode: "explain"</code> for a finished test question, <code>mode: "chat"</code> with the uploaded file's text in <code>context.text</code>, and <code>mode: "generate"</code> with the file text in <code>text</code> plus a question <code>count</code> — and expects <b>{ reply }</b> back (for generate, the reply is the new questions written in this app's normal text format, so the page can parse, preview and score them like any uploaded paper).</p>
+        <pre class="ai-backend">// api/chat.js — Vercel serverless function (separate deploy file, NOT part of this page)
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+  const key = process.env.GROQ_API_KEY;
+  if (!key) return res.status(500).json({ error: 'GROQ_API_KEY is not set on the host. Add it in Vercel Environment Variables and redeploy.' });
+  const { message, context, mode, text, count } = req.body || {};
+  let system, user;
+  if (mode === 'generate') {
+    system = 'You write multiple-choice questions from study content. Reply ONLY with the questions, each as: the question text, then its options on their own lines as "A. ...", "B. ...", "C. ...", "D. ...", then a line "Answer: X" (use "Answer: X, Y" only for a genuine multi-answer question). No intro, no commentary.';
+    user = 'Write ' + (count || 10) + ' MCQs from this content:\n' + String(text || '').slice(0, 12000);
+  } else if (mode === 'chat') {
+    if (!message) return res.status(400).json({ error: 'Missing message' });
+    system = 'You are a helpful study assistant. Answer using ONLY the provided content; if the answer is not in it, say so plainly instead of guessing.';
+    user = 'Content:\n' + String((context &amp;&amp; context.text) || '').slice(0, 12000) + '\n\nQuestion: ' + message;
+  } else {
+    if (!message) return res.status(400).json({ error: 'Missing message' });
+    system = 'You are a friendly MCQ tutor. The test is already finished. Explain clearly and briefly why the correct answer is correct and why the student choice was wrong, using ONLY the question context provided. Do not invent a different answer key.';
+    user = 'Question context:\n' + JSON.stringify(context || {}, null, 2) + '\n\nStudent asks: ' + message;
+  }
+  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: system }, { role: 'user', content: user }] })
+  });
+  const data = await r.json();
+  if (!r.ok) return res.status(502).json({ error: (data &amp;&amp; data.error &amp;&amp; data.error.message) || 'Groq request failed' });
+  return res.status(200).json({ reply: data.choices[0].message.content });
+}</pre>
+      </details>
+    </div>
+
+    <h3 style="font-size:22px;margin:26px 0 12px">Review your answers</h3>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="filterRow">
+      <button class="btn btn-primary filter-btn" data-f="all">All</button>
+      <button class="btn btn-outline filter-btn" data-f="correct">Correct only</button>
+      <button class="btn btn-outline filter-btn" data-f="wrong">Wrong only</button>
+      <button class="btn btn-outline filter-btn" data-f="skipped">Skipped only</button>
+    </div>
+    <div id="reviewList"></div>
+  </section>
+</div>
+<!-- MINI CHAT — compact floating window, stays over home/preview/results, hidden during a test -->
+<div class="mini-chat" id="miniChatPanel" role="dialog" aria-label="QuizMate mini chat" aria-hidden="true">
+  <div class="mini-head">
+    <div>
+      <h4>✦ QuizMate — your AI tutor</h4>
+      <p id="miniContextLabel">No file loaded yet</p>
+    </div>
+    <div class="mini-head-actions">
+      <button class="mini-icon-btn" id="miniMinBtn" aria-label="Minimise mini chat" title="Minimise">−</button>
+      <button class="mini-icon-btn" id="miniCloseBtn" aria-label="Close mini chat" title="Close">&times;</button>
+    </div>
+  </div>
+  <div class="mini-messages" id="miniMessages" aria-live="polite"></div>
+  <div class="mini-quick" id="miniQuick">
+    <button type="button" class="primary" data-mini-cmd="start test">▶ Start test</button>
+    <button type="button" data-mini-cmd="generate 10 questions">✦ Generate 10 questions</button>
+    <button type="button" data-mini-cmd="__upload__">↑ Upload a file</button>
+  </div>
+  <div class="mini-wait" id="miniWaitNote">Test ready — it won’t start on its own. Tap <b>Start test</b> above or type “start test” here.</div>
+  <div class="mini-input-row">
+    <input type="text" id="miniInput" placeholder="Message… or type ‘start test’" autocomplete="off" aria-label="Mini chat message">
+    <button class="btn btn-teal" id="miniSendBtn">Send →</button>
+  </div>
+</div>
+<!-- Legacy panel kept hidden for backwards compatibility; mini chat above replaces it -->
+<div class="ai-float-panel" id="aiFloatPanel" style="display:none" aria-hidden="true"></div>
+<button class="btn btn-teal ai-float" id="aiFloatBtn" aria-label="Open QuizMate, your AI tutor" title="QuizMate — your AI tutor" aria-haspopup="dialog" aria-expanded="false"><span class="qm-ico" aria-hidden="true">💬</span><span>QuizMate</span></button>
+
+<script>
+if(window.pdfjsLib){ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }
+
+var SAMPLE_TEXT = `1. What is the capital of France?
+A) Berlin
+B) Madrid
+C) Paris
+D) Rome
+Answer: C
+Explanation: Paris is the capital and largest city of France.
+
+2. Which planet is known as the Red Planet?
+A) Venus
+B) Mars
+C) Jupiter
+D) Saturn
+Answer: B
+
+3. What is 15 + 27?
+A) 32
+B) 42
+C) 52
+D) 45
+Answer: B
+
+4. Which language is primarily spoken in Brazil?
+A) Spanish
+B) Portuguese
+C) French
+D) Italian
+Answer: B
+
+5. What is the chemical symbol for Gold?
+A) Ag
+B) Fe
+C) Au
+D) Pb
+Answer: C
+
+6. Who wrote the play Romeo and Juliet?
+A) Charles Dickens
+B) William Shakespeare
+C) Jane Austen
+D) Mark Twain
+Answer: B
+
+7. Which is the largest ocean on Earth?
+A) Atlantic Ocean
+B) Indian Ocean
+C) Arctic Ocean
+D) Pacific Ocean
+Answer: D
+
+8. How many sides does a hexagon have?
+A) 5
+B) 6
+C) 7
+D) 8
+Answer: B
+
+9. Which gas do plants absorb from the atmosphere?
+A) Oxygen
+B) Nitrogen
+C) Carbon Dioxide
+D) Hydrogen
+Answer: C
+
+10. What is the smallest prime number?
+A) 0
+B) 1
+C) 2
+D) 3
+Answer: C
+
+11. Which of these numbers are even? (Select all that apply)
+A) 3
+B) 4
+C) 7
+D) 10
+Answer: B, D
+
+12. Which of these are primary colours? (Select all that apply)
+A) Red
+B) Green
+C) Blue
+D) Purple
+Answers: A, C`;
+
+var INLINE_SAMPLE_TEXT = [
+"A data analyst runs the following on a 25 GB table:",
+"DROP TABLE IF EXISTS sales.orders;",
+"Afterwards, SHOW TABLES no longer lists sales.orders, but the underlying Parquet files in cloud object storage are still present. Which statement best explains this behaviour?",
+"A.  Tables larger than 10 GB always retain their underlying files when dropped.",
+"B.  The table was an external (unmanaged) table, so DROP TABLE removes the metadata while the data files in their original storage location are left untouched.   \u2713 Correct answer",
+"C.  Unity Catalog requires VACUUM to be run before underlying files are deleted from a managed table.",
+"D.  DROP TABLE always preserves the underlying files unless the CASCADE option is supplied.",
+"",
+"A query runs:",
+"SELECT COUNT(*) FROM events WHERE event_date = '2026-01-01';",
+"It scans the whole table every time it runs. Which change most directly reduces the amount of data scanned?",
+"A.  Adding a comment at the top of the query.",
+"B.  Partitioning or clustering the table by event_date so only the matching files are read.   \u2713 Correct answer",
+"C.  Renaming the events table.",
+"D.  Running the query twice so the second run is cached in the editor.",
+"",
+"Which of these SQL statements changes data already stored in a table?",
+"A.  SELECT",
+"B.  UPDATE   \u2713 Correct answer",
+"C.  SHOW TABLES",
+"D.  DESCRIBE TABLE",
+"",
+"Which of these are valid ways to read data from a table? (Select all that apply)",
+"A.  SELECT * FROM sales   \u2713 Correct answer",
+"B.  DROP TABLE sales",
+"C.  SELECT COUNT(*) FROM sales   \u2713 Correct answer",
+"D.  DELETE FROM sales",
+"",
+"1. What is the capital of France?",
+"A) Berlin",
+"B) Madrid",
+"C) Paris",
+"D) Rome",
+"Answer: C",
+"",
+"Which planet is known as the Red Planet?",
+"A) Venus",
+"B) Mars",
+"C) Jupiter",
+"D) Saturn",
+"Correct Answer: B",
+"",
+"A short warm-up with no answer key marked: roughly how many minutes are there in 2.5 hours?",
+"A.  120",
+"B.  150",
+"C.  180",
+"D.  90"
+].join('\n');
+
+var lastParseStats = {parsed:0, withAnswer:0, withoutAnswer:0, multiAnswer:0, skippedBlocks:0, skippedLines:[], totalNonEmpty:0};
+
+// ---------- PARSER ----------
+function extractInlineMarker(txt){
+  if(txt==null) return {text:txt, isCorrect:false};
+  var t = String(txt);
+  // Checkmark anywhere near end: strip from checkmark onwards
+  var checkIdx = t.search(/[\u2713\u2714\u2705]/);
+  if(checkIdx>=0){
+    return {text: t.slice(0,checkIdx).replace(/[\s\-\u2014\|\u00b7]+$/,'').trim(), isCorrect:true};
+  }
+  // [Correct] / [Correct answer] / (Correct) at end
+  var m = t.match(/\s*[\[\(]\s*correct(\s+answer)?\s*[\]\)]\s*\.?\s*$/i);
+  if(m) return {text: t.slice(0,m.index).trim(), isCorrect:true};
+  // Trailing "Correct answer" / "- Correct answer"
+  var m2 = t.match(/\s*(?:\-\s*)?correct\s+answer\s*\.?\s*$/i);
+  if(m2 && t.length - m2.index < 40) return {text: t.slice(0,m2.index).trim(), isCorrect:true};
+  return {text:t, isCorrect:false};
+}
+function isStandaloneMarker(line){
+  return /^\s*[\u2713\u2714\u2705]\s*(correct(\s+answer)?)?\s*\.?\s*$/i.test(line)
+      || /^\s*[\[\(]\s*correct(\s+answer)?\s*[\]\)]\s*$/i.test(line)
+      || /^\s*correct\s+answer\s*\.?\s*$/i.test(line);
+}
+function parseMCQs(rawText){
+  lastParseStats = {parsed:0, withAnswer:0, withoutAnswer:0, multiAnswer:0, skippedBlocks:0, skippedLines:[], totalNonEmpty:0};
+  if(!rawText) return [];
+  var text = String(rawText).replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+  var rawLines = text.split('\n');
+  // Expand lines containing 2+ inline option markers
+  var lines=[];
+  rawLines.forEach(function(line){
+    if(/(^|\s)[A-E][\)\.]\s/.test(line) && (line.match(/\b[A-Ea-e][\)\.]\s/g)||[]).length>=2 && !/^\s*[A-Ea-e][\)\.]\s/.test(line)){
+      var markers=[]; var re=/\b[A-Ea-e][\)\.\:]\s/g; var m;
+      while((m=re.exec(line))!==null){ markers.push(m.index); }
+      if(markers.length>=2){
+        if(markers[0]>0) lines.push(line.slice(0,markers[0]).trim());
+        for(var i=0;i<markers.length;i++){ var s=markers[i]; var e=(i+1<markers.length)?markers[i+1]:line.length; lines.push(line.slice(s,e).trim()); }
+        return;
+      }
+    }
+    lines.push(line);
+  });
+
+  var questions=[]; var cur=null; var pending=[]; // pending = lines seen after options started, not yet resolved
+  function markCorrect(idx){
+    if(!cur || idx==null || idx<0) return;
+    if(!cur.correctIndices) cur.correctIndices=[];
+    if(cur.correctIndices.indexOf(idx)===-1) cur.correctIndices.push(idx);
+    cur.correctIndices.sort(function(a,b){return a-b;});
+    cur.correctIndex = cur.correctIndices[0];
+  }
+  function pushCur(){
+    if(!cur) return;
+    flushPendingToOption();
+    if(!cur.correctIndices) cur.correctIndices=[];
+    cur.correctIndex = cur.correctIndices.length?cur.correctIndices[0]:-1;
+    if(cur.text && cur.options.length>=2){ questions.push(cur); }
+    else if(cur.text || cur.options.length){
+      lastParseStats.skippedBlocks++;
+      var snippet=(cur.text||cur.options.join(' / ')).slice(0,180);
+      if(snippet) lastParseStats.skippedLines.push(snippet + (cur.options.length<2 ? '  [skipped: fewer than 2 options found]' : ''));
+    }
+    cur=null;
+  }
+  function flushPendingToOption(){
+    if(!pending.length || !cur) { pending=[]; return; }
+    if(cur.options.length){
+      // A pending chunk could itself carry a standalone/inline marker for the last option
+      pending.forEach(function(pl){
+        if(isStandaloneMarker(pl)){ markCorrect(cur.options.length-1); return; }
+        var ex = extractInlineMarker(pl);
+        if(ex.isCorrect) markCorrect(cur.options.length-1);
+        if(ex.text) cur.options[cur.options.length-1] += ' ' + ex.text;
+      });
+    }
+    pending=[];
+  }
+  function startQuestion(firstText){
+    pushCur();
+    cur = {text:firstText||'', options:[], correctIndex:-1, correctIndices:[], explanation:''};
+  }
+  function isQuestionStart(line){
+    return /^\s*(?:Q\s*\.?\s*\d+|Question\s+\d+|\d+\s*[\.\)\:])\s+/i.test(line);
+  }
+  function cleanQuestion(line){
+    return line.replace(/^\s*(?:Q\s*\.?\s*\d+\s*[\.\)\:\-]?\s*|Question\s+\d+\s*[\.\)\:\-]?\s*|\d+\s*[\.\)\:]\s*)/i,'').trim();
+  }
+  function optionMatch(line){
+    var m = line.match(/^\s*\(?([A-Ea-e])\s*[\)\.\:\-]\s+(.+)$/);
+    if(m) return {letter:m[1].toUpperCase(), text:m[2].trim()};
+    var m2 = line.match(/^\s*\(([A-Ea-e])\)\s*(.+)$/);
+    if(m2) return {letter:m2[1].toUpperCase(), text:m2[2].trim()};
+    return null;
+  }
+  function answerMatch(line){
+    // Dedicated answer line — supports single or multiple answers, e.g.
+    // "Answer: B" / "Answers: A, C" / "Correct Answers: B and D" / "Ans: A & C"
+    if(line.length>90) return null;
+    var m = line.match(/^\s*(?:Answers?|Ans|Correct\s*Answers?|Correct\s*Options?|Key)\s*[:\-\.]?\s*(.+)$/i);
+    if(!m) return null;
+    var rest = m[1].trim();
+    // Must look like a list of option letters (allow parens, commas, "and", "&", "/")
+    if(!/^\(?[A-Ea-e]\b/.test(rest)) return null;
+    if(!/^[\s\(\)A-Ea-e,\/&·\-]+(?:and[\s\(\)A-Ea-e,\/&·\-]*)?$/i.test(rest) && rest.replace(/\band\b/gi,'').trim().match(/[F-Za-z]{2,}/)) {
+      // Contains extra words beyond separators — still try to extract only if letters are isolated
+      // Fall through to extraction, but reject sentences
+      if(/[a-z]{3,}/i.test(rest.replace(/\band\b/gi,''))) return null;
+    }
+    var letters=[]; var re=/\b([A-Ea-e])\b/g; var lm;
+    while((lm=re.exec(rest))!==null){ var L=lm[1].toUpperCase(); if(letters.indexOf(L)===-1) letters.push(L); }
+    // Also handle "(A)" / "(C)" style
+    if(!letters.length){
+      var re2=/\(([A-Ea-e])\)/g; while((lm=re2.exec(rest))!==null){ var L2=lm[1].toUpperCase(); if(letters.indexOf(L2)===-1) letters.push(L2); }
+    }
+    return letters.length?letters:null;
+  }
+  function expectedNextLetter(){
+    if(!cur || !cur.options.length) return 'A';
+    return String.fromCharCode(65 + cur.options.length);
+  }
+  function addOption(opt){
+    var ex = extractInlineMarker(opt.text);
+    cur.options.push(ex.text);
+    if(ex.isCorrect) markCorrect(cur.options.length-1);
+  }
+
+  lines.forEach(function(rawLine){
+    var line = String(rawLine).trim();
+    if(!line) return;
+    lastParseStats.totalNonEmpty++;
+
+    // Standalone correct marker on its own line -> marks last option
+    if(isStandaloneMarker(line) && cur && cur.options.length){
+      flushPendingToOption();
+      markCorrect(cur.options.length-1);
+      return;
+    }
+    // Dedicated Answer: X line (single or multiple letters)
+    var ans = answerMatch(line);
+    if(ans && cur && cur.options.length){
+      flushPendingToOption();
+      ans.forEach(function(L){ markCorrect(L.charCodeAt(0)-65); });
+      return;
+    }
+    if(/^\s*Explanation\s*[:\-]/i.test(line) && cur){
+      flushPendingToOption();
+      cur.explanation = line.replace(/^\s*Explanation\s*[:\-]\s*/i,'').trim();
+      return;
+    }
+    // Numbered question start — explicit, always begins a new question
+    if(isQuestionStart(line)){
+      // Any pending lines belonged to the previous question's last option
+      if(cur) flushPendingToOption();
+      startQuestion(cleanQuestion(line));
+      return;
+    }
+    var opt = optionMatch(line);
+    if(opt){
+      if(!cur) startQuestion('');
+      if(cur.options.length===0){
+        // First option for this question
+        addOption(opt);
+        return;
+      }
+      // We already have options. Resolve pending first:
+      if(pending.length){
+        if(opt.letter==='A'){
+          // Pending lines were the next (unnumbered) question's text
+          var qtext = pending.join('\n'); pending=[];
+          // flush nothing to old option; start new question with pending text
+          // pushCur would flush pending — clear it first, then push manually
+          var old=cur; cur=null;
+          if(!old.correctIndices) old.correctIndices=[]; old.correctIndex = old.correctIndices.length?old.correctIndices[0]:-1;
+          if(old.text && old.options.length>=2) questions.push(old);
+          else if(old.text || old.options.length){ lastParseStats.skippedBlocks++; lastParseStats.skippedLines.push((old.text||'').slice(0,180)+'  [skipped: fewer than 2 options found]'); }
+          cur = {text:qtext, options:[], correctIndex:-1, correctIndices:[], explanation:''};
+          addOption(opt);
+          return;
+        } else {
+          // Pending was a wrap of the last option
+          flushPendingToOption();
+          addOption(opt);
+          return;
+        }
+      }
+      if(opt.letter==='A' && cur.options.length>=2){
+        // A repeated 'A.' with no intervening text: treat as a new question with no text yet
+        // (its text may have been missed) — only if current question looks complete (has D or a correct key)
+        if(cur.options.length>=4 || (cur.correctIndices && cur.correctIndices.length>0) || cur.correctIndex>=0){
+          startQuestion('');
+          addOption(opt);
+          return;
+        }
+      }
+      addOption(opt);
+      return;
+    }
+    // Plain text line
+    if(!cur){
+      startQuestion(line);
+      return;
+    }
+    if(cur.explanation){ cur.explanation += ' ' + line; return; }
+    if(cur.options.length===0){
+      // Still in question text — preserve line breaks so code / multi-line stems stay readable
+      cur.text = cur.text ? (cur.text + '\n' + line) : line;
+      return;
+    }
+    // Options have started: defer — could be an option wrap OR the next question's text
+    pending.push(line);
+  });
+  pushCur();
+  questions.forEach(function(q,i){ q.id=i+1; q.originalIndex=i; });
+  lastParseStats.parsed = questions.length;
+  lastParseStats.withAnswer = questions.filter(function(q){return (q.correctIndices && q.correctIndices.length>0) || q.correctIndex>=0;}).length;
+  lastParseStats.multiAnswer = questions.filter(function(q){return q.correctIndices && q.correctIndices.length>1;}).length;
+  lastParseStats.withoutAnswer = questions.length - lastParseStats.withAnswer;
+  return questions;
+}
+
+// ---------- STATE ----------
+var parsedQuestions=[]; var sourceName='Sample Test';
+var sourceText=''; var contentChatHistory=[]; var aiGenerating=false; var aiContentSending=false;
+// Upload source tracking: 'direct' = main homepage upload/paste/sample controls;
+// 'chatbot' = provided through QuizMate (file picked from the mini chat, or content pasted/sent in chat).
+// "Your test is ready" preview is shown ONLY for direct loads — chatbot loads stay in the chat.
+var lastLoadSource='direct'; var pendingFileSource='direct'; var previewSuppressedForChat=false;
+var testQuestions=[]; var userAnswers=[]; var marked=[]; var currentIdx=0;
+var startTime=null; var timerInt=null; var elapsedSec=0; var timeLimitSec=0; var testFinished=false;
+
+function $(id){return document.getElementById(id);}
+function showView(name){
+  ['view-home','view-test','view-result'].forEach(function(v){ $(v).classList.remove('active'); });
+  $(name).classList.add('active'); window.scrollTo({top:0,behavior:'smooth'});
+  // Single constant AI button + mini chat: visible on home & results, COMPLETELY hidden during an active test.
+  var fb=$('aiFloatBtn'); if(fb) fb.style.display = (name==='view-test') ? 'none' : 'inline-flex';
+  var fp=$('aiFloatPanel'); if(fp && name==='view-test'){ fp.classList.remove('open'); fp.setAttribute('aria-hidden','true'); }
+  var mc=$('miniChatPanel'); if(mc && name==='view-test'){ mc.classList.remove('open'); mc.setAttribute('aria-hidden','true'); if(fb) fb.setAttribute('aria-expanded','false'); }
+}
+function shuffleArr(a){ var arr=a.slice(); for(var i=arr.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=arr[i];arr[i]=arr[j];arr[j]=t; } return arr; }
+function corrArr(q){ if(q.correctIndices && q.correctIndices.length) return q.correctIndices.slice().sort(function(a,b){return a-b;}); if(typeof q.correctIndex==='number' && q.correctIndex>=0) return [q.correctIndex]; return []; }
+function isMulti(q){ return corrArr(q).length>1; }
+function userArr(i){ var ua=userAnswers[i]; if(Array.isArray(ua)) return ua; if(typeof ua==='number' && ua>=0) return [ua]; return []; }
+function setsEqual(a,b){ if(a.length!==b.length) return false; var as=a.slice().sort(function(x,y){return x-y;}), bs=b.slice().sort(function(x,y){return x-y;}); for(var k=0;k<as.length;k++) if(as[k]!==bs[k]) return false; return true; }
+function lettersFor(q, indices){ return indices.map(function(idx){return String.fromCharCode(65+idx)+'. '+q.options[idx];}).join('  •  '); }
+function fmtTime(s){ var m=Math.floor(s/60), sec=s%60; return String(m).padStart(2,'0')+':'+String(sec).padStart(2,'0'); }
+function showError(msg){ var b=$('errorBox'); b.textContent=msg; b.style.display='block'; }
+function clearError(){ $('errorBox').style.display='none'; }
+
+function handleParsed(text, name, source){
+  // NO AUTO-START: uploading / pasting / loading a sample NEVER opens or starts the test.
+  // We only parse + (for direct loads) show the preview on the home screen and wait for an
+  // explicit "Start test" click or a "start test" command in the QuizMate mini chat.
+  // CHATBOT LOADS: when source is 'chatbot', the "Your test is ready" box is NOT shown at all —
+  // QuizMate acknowledges the content inside the chat and the test only opens on "start test".
+  clearError();
+  if(!$('view-home').classList.contains('active')) showView('view-home');
+  var src = (source==='chatbot') ? 'chatbot' : 'direct';
+  lastLoadSource = src;
+  previewSuppressedForChat = (src==='chatbot');
+  sourceText = String(text||'');
+  sourceName = name || 'Uploaded File';
+  resetContentChat();
+  var qs = parseMCQs(text);
+  if(!qs.length){
+    parsedQuestions = [];
+    $('previewSection').style.display='none';
+    if(src==='chatbot'){
+      $('aiContentSection').style.display='none';
+      if(isSubstantiveContent(sourceText)){
+        if(typeof addMiniMessage==='function') addMiniMessage('assistant','✓ Got it — I’ve received “'+sourceName+'” here in QuizMate chat ('+sourceText.trim().length.toLocaleString()+' characters). I haven’t opened the “Your test is ready” box — that only appears when you upload directly on the homepage.\n\nThis looks like study content rather than a ready question paper. You can:\n• ask me anything about it here\n• type “generate 10 questions” and I’ll create MCQs from it — the questions will appear here in chat first\nNothing will start until you say so.');
+        if(typeof updateMiniContext==='function') updateMiniContext(true);
+        return;
+      }
+      if(typeof addMiniMessage==='function') addMiniMessage('assistant','I read that, but I couldn’t find questions or enough study content in it. Try a file whose options start with A. / B. / C. / D. and mark the correct one with “✓ Correct answer” or an “Answer: X” line — or paste a longer passage of study content here.');
+      return;
+    }
+    if(isSubstantiveContent(sourceText)){
+      // Not a question paper, but real study content — offer AI generation + chat about it.
+      showAiContentSection();
+      $('aiContentSection').scrollIntoView({behavior:'smooth',block:'start'});
+      return;
+    }
+    $('aiContentSection').style.display='none';
+    showError('No questions could be found in this file. Check the format — options should start with A. / B. / C. / D. (or A) B) …), and mark the correct one either with "✓ Correct answer" at the end of that option or with an "Answer: X" line. You can also try pasting the text directly.');
+    return;
+  }
+  parsedQuestions = qs;
+  if(src==='chatbot'){
+    // Stay in the chat: no preview box, no scrolling away, no home AI panel pop-up.
+    $('previewSection').style.display='none';
+    $('aiContentSection').style.display='none';
+    if(typeof addMiniMessage==='function') addMiniMessage('assistant','✓ Received “'+sourceName+'” in QuizMate chat — '+qs.length+' question(s) are ready here, inside the chat. I haven’t opened the “Your test is ready” box (that only shows for direct homepage uploads).\n\nWhen you want to begin, tap “Start test” below or type “start test”. If you’d like to see the preview box first, type “show preview”. You can also just ask me about the content.');
+    if(typeof updateMiniContext==='function') updateMiniContext(true);
+    return;
+  }
+  renderPreview();
+  showAiContentSection();
+  if(typeof updateMiniContext==='function') updateMiniContext(true);
+}
+function showPreviewExplicit(){
+  // The one way a chatbot-loaded test reveals the "Your test is ready" box:
+  // the user explicitly asks for the preview (e.g. "show preview" in QuizMate chat).
+  previewSuppressedForChat=false;
+  renderPreview();
+}
+function renderPreview(){
+  var withAns = lastParseStats.withAnswer;
+  var without = lastParseStats.withoutAnswer;
+  $('previewSection').style.display='block';
+  $('previewSummary').textContent = sourceName + ' • ' + parsedQuestions.length + ' questions parsed • ' + withAns + ' scored (answer key found) • ' + (lastParseStats.multiAnswer||0) + ' multi-answer • ' + without + ' unscored (no marker found) • ' + lastParseStats.skippedBlocks + ' block(s) skipped.';
+  $('previewBadge').textContent = parsedQuestions.length + ' QUESTIONS READY';
+  $('parseStats').innerHTML =
+    '<span class="badge badge-green">'+parsedQuestions.length+' parsed</span>' +
+    '<span class="badge badge-green">'+withAns+' with answer key</span>' +
+    ((lastParseStats.multiAnswer||0)? '<span class="badge badge-green">'+lastParseStats.multiAnswer+' multi-answer (select all that apply)</span>':'') +
+    (without? '<span class="badge badge-amber">'+without+' unscored — no marker</span>':'') +
+    (lastParseStats.skippedBlocks? '<span class="badge badge-amber">'+lastParseStats.skippedBlocks+' skipped block(s)</span>':'<span class="badge badge-green">0 skipped</span>');
+  if(without>0){
+    $('previewWarn').textContent = 'Note: ' + without + ' question(s) had no detectable answer marker (no "✓ Correct answer" and no "Answer: X" line). They are still included in the test as unscored questions — they won\'t count toward your score, and the review will say "No answer key" for them.';
+  } else { $('previewWarn').textContent='All questions have an answer key (via ✓ marker or Answer line). You can shuffle and start when ready. Correct options are highlighted in the preview below — the ✓ marker text itself is stripped from the options you will see in the test.'; }
+  if(lastParseStats.skippedBlocks && lastParseStats.skippedLines.length){
+    $('skippedDetails').style.display='block';
+    $('skippedList').textContent = lastParseStats.skippedLines.join('\n\n');
+  } else { $('skippedDetails').style.display='none'; }
+  var html='';
+  parsedQuestions.slice(0,8).forEach(function(q,i){
+    var ca=corrArr(q);
+    html+='<div class="qpreview"><p>'+(i+1)+'. '+escapeHtml(q.text)+(ca.length===0?'  <span class="badge badge-amber">UNSCORED</span>':'')+(ca.length>1?'  <span class="badge badge-green">MULTI-ANSWER • '+ca.length+' correct</span>':'')+'</p><ul>';
+    q.options.forEach(function(o,oi){ var isC=ca.indexOf(oi)!==-1; html+='<li class="'+(isC?'correct':'')+'"><b>'+String.fromCharCode(65+oi)+'.</b> '+escapeHtml(o)+(isC?' ✓ Correct':'')+'</li>'; });
+    html+='</ul></div>';
+  });
+  if(parsedQuestions.length>8) html+='<p style="color:var(--muted);font-size:13px">… and '+(parsedQuestions.length-8)+' more questions — all will appear in the test.</p>';
+  $('previewList').innerHTML=html;
+  $('previewSection').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+// File handling
+var drop=$('dropZone'), fileInput=$('fileInput');
+$('browseBtn').addEventListener('click',function(e){ e.stopPropagation(); pendingFileSource='direct'; fileInput.click(); });
+drop.addEventListener('click',function(){ pendingFileSource='direct'; fileInput.click(); });
+drop.addEventListener('dragover',function(e){ e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave',function(){ drop.classList.remove('drag'); });
+drop.addEventListener('drop',function(e){ e.preventDefault(); drop.classList.remove('drag'); if(e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0],'direct'); });
+fileInput.addEventListener('change',function(){ if(fileInput.files[0]) processFile(fileInput.files[0], pendingFileSource); });
+
+async function processFile(file, source){
+  var fileSource = (typeof source!=='undefined') ? (source==='chatbot' ? 'chatbot' : 'direct') : (pendingFileSource==='chatbot' ? 'chatbot' : 'direct');
+  pendingFileSource='direct';
+  clearError();
+  $('fileInfo').textContent='📄 '+file.name+' • '+(file.size/1024).toFixed(1)+' KB';
+  $('parseStatus').textContent='Reading file…';
+  try{
+    if(file.name.toLowerCase().endsWith('.txt') || file.type==='text/plain'){
+      var txt = await file.text();
+      $('parseStatus').textContent='Parsed TXT file.';
+      handleParsed(txt, file.name, fileSource);
+    } else if(file.name.toLowerCase().endsWith('.pdf') || file.type==='application/pdf'){
+      if(!window.pdfjsLib){ throw new Error('PDF reader failed to load. Check your connection and try again, or paste the text instead.'); }
+      var buf = await file.arrayBuffer();
+      var pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      var full='';
+      for(var p=1;p<=pdf.numPages;p++){
+        $('parseStatus').textContent='Reading PDF page '+p+' of '+pdf.numPages+'…';
+        var page = await pdf.getPage(p);
+        var tc = await page.getTextContent();
+        var lastY=null; var pageText='';
+        tc.items.forEach(function(it){
+          if(lastY!==null && Math.abs(it.transform[5]-lastY)>2) pageText+='\n';
+          else if(pageText && !pageText.endsWith(' ') && !pageText.endsWith('\n')) pageText+=' ';
+          pageText+=it.str; lastY=it.transform[5];
+        });
+        full+='\n'+pageText;
+      }
+      $('parseStatus').textContent='Parsed PDF • '+pdf.numPages+' page(s).';
+      handleParsed(full, file.name, fileSource);
+    } else if(file.name.toLowerCase().endsWith('.docx') || file.type==='application/vnd.openxmlformats-officedocument.wordprocessingml.document'){
+      if(!window.mammoth){ throw new Error('Word reader failed to load. Check your connection and try again, or paste the text instead.'); }
+      $('parseStatus').textContent='Reading Word document…';
+      var docxBuf = await file.arrayBuffer();
+      var result = await mammoth.extractRawText({arrayBuffer: docxBuf});
+      var docxText = (result && result.value) ? result.value : '';
+      if(!docxText || !docxText.trim()){ throw new Error('No readable text was found in this Word document. Make sure it isn\'t empty or made only of scanned images.'); }
+      $('parseStatus').textContent='Parsed Word document.';
+      handleParsed(docxText, file.name, fileSource);
+    } else if(file.name.toLowerCase().endsWith('.doc') || file.type==='application/msword'){
+      showError('This looks like an older Word .doc file. That binary format can\'t be read directly in the browser — please open it in Word / Google Docs and save or export it as .docx (or PDF), then upload again.');
+      $('parseStatus').textContent='';
+    } else {
+      showError('That file type isn\'t supported. Please upload a .pdf, .docx (Word) or .txt file.');
+      $('parseStatus').textContent='';
+    }
+  }catch(err){
+    console.error(err); showError('Could not read this file: '+(err.message||err)+' — try saving it as .docx, PDF or TXT, or paste the text.');
+    $('parseStatus').textContent='';
+  }
+}
+
+$('parsePasteBtn').addEventListener('click',function(){
+  var t=$('pasteInput').value.trim();
+  if(!t){ showError('Paste some questions first, or upload a file.'); return; }
+  handleParsed(t,'Pasted Text','direct');
+});
+$('sampleBtn').addEventListener('click',function(){
+  $('pasteInput').value=SAMPLE_TEXT; handleParsed(SAMPLE_TEXT,'Sample Test — General Knowledge','direct');
+});
+$('inlineSampleBtn').addEventListener('click',function(){
+  $('pasteInput').value=INLINE_SAMPLE_TEXT; handleParsed(INLINE_SAMPLE_TEXT,'Sample — ✓ Correct answer style','direct');
+});
+$('useExampleBtn').addEventListener('click',function(){
+  $('pasteInput').value=INLINE_SAMPLE_TEXT; handleParsed(INLINE_SAMPLE_TEXT,'Sample — ✓ Correct answer style','direct'); window.scrollTo({top:0,behavior:'smooth'});
+});
+
+// ---------- TEST ----------
+$('startBtn').addEventListener('click', startTest);
+function startTest(){
+  if(!parsedQuestions.length) return;
+  var qs = parsedQuestions.map(function(q){
+    var ca=corrArr(q);
+    return {text:q.text, options:q.options.slice(), correctIndex:ca.length?ca[0]:-1, correctIndices:ca, explanation:q.explanation||'', originalIndex:q.originalIndex};
+  });
+  if($('shuffleQ').checked) qs = shuffleArr(qs);
+  if($('shuffleO').checked){
+    qs = qs.map(function(q){
+      var ca=corrArr(q);
+      if(!ca.length) return q;
+      var indexed = q.options.map(function(o,i){return {o:o, orig:i};});
+      var sh = shuffleArr(indexed);
+      var newCorrectIndices = ca.map(function(origIdx){ return sh.findIndex(function(x){return x.orig===origIdx;}); }).sort(function(a,b){return a-b;});
+      return {text:q.text, options:sh.map(function(x){return x.o;}), correctIndex:newCorrectIndices.length?newCorrectIndices[0]:-1, correctIndices:newCorrectIndices, explanation:q.explanation, originalIndex:q.originalIndex};
+    });
+  }
+  testQuestions=qs; userAnswers=qs.map(function(){return [];}); marked=new Array(qs.length).fill(false); currentIdx=0; elapsedSec=0; testFinished=false;
+  var tl=parseInt($('timeLimit').value,10)||0; timeLimitSec=tl*60;
+  startTime=Date.now();
+  clearInterval(timerInt);
+  timerInt=setInterval(function(){
+    elapsedSec=Math.floor((Date.now()-startTime)/1000);
+    var display = timeLimitSec>0 ? Math.max(0,timeLimitSec-elapsedSec) : elapsedSec;
+    $('timerEl').textContent=(timeLimitSec>0?'⏱ ':'')+fmtTime(display);
+    if(timeLimitSec>0 && elapsedSec>=timeLimitSec){ finishTest(true); }
+    if(timeLimitSec>0 && timeLimitSec-elapsedSec<=60) $('timerEl').style.color='var(--red)';
+  },500);
+  $('timerEl').textContent=fmtTime(timeLimitSec||0);
+  $('testTitle').textContent=sourceName.replace(/\.(pdf|txt|docx|doc)$/i,'');
+  $('testSub').textContent=qs.length+' questions • '+(timeLimitSec? (timeLimitSec/60)+' min limit':'No time limit');
+  showView('view-test'); renderQuestion();
+}
+function renderQuestion(){
+  var q=testQuestions[currentIdx]; if(!q) return;
+  var multi=isMulti(q);
+  var selected=userArr(currentIdx);
+  $('qNumBadge').textContent='Question '+(currentIdx+1)+' of '+testQuestions.length;
+  $('markedBadge').style.display=marked[currentIdx]?'inline-flex':'none';
+  $('multiHint').style.display=multi?'inline-flex':'none';
+  $('multiNote').style.display=multi?'block':'none';
+  if(multi) $('multiHint').textContent='☑ Multiple answers — select all that apply ('+corrArr(q).length+' correct)';
+  $('qText').textContent=q.text;
+  var html='';
+  q.options.forEach(function(o,i){
+    var sel=selected.indexOf(i)!==-1?' selected':'';
+    html+='<button class="opt'+(multi?' multi':'')+sel+'" data-i="'+i+'" aria-pressed="'+(sel?'true':'false')+'"><span class="opt-letter">'+String.fromCharCode(65+i)+'</span><span>'+escapeHtml(o)+'</span><span class="opt-check">'+(multi?'✓':'')+'</span></button>';
+  });
+  $('optionsEl').innerHTML=html;
+  document.querySelectorAll('.opt').forEach(function(btn){ btn.addEventListener('click',function(){
+    var idx=parseInt(btn.dataset.i,10);
+    var cur=userArr(currentIdx).slice();
+    if(multi){
+      var pos=cur.indexOf(idx);
+      if(pos===-1) cur.push(idx); else cur.splice(pos,1);
+      cur.sort(function(a,b){return a-b;});
+      userAnswers[currentIdx]=cur;
+    } else {
+      userAnswers[currentIdx]=[idx];
+    }
+    renderQuestion();
+  }); });
+  $('prevBtn').disabled=currentIdx===0;
+  $('nextBtn').textContent=currentIdx===testQuestions.length-1?'Review & Submit →':'Next →';
+  $('markBtn').textContent=marked[currentIdx]?'★ Marked':'☆ Mark for review';
+  var answered = testQuestions.filter(function(_,i){return userArr(i).length>0;}).length;
+  $('answeredPill').textContent=answered+' / '+testQuestions.length+' answered';
+  $('progressBar').style.width=(answered/testQuestions.length*100)+'%';
+  // palette
+  var ph='';
+  testQuestions.forEach(function(_,i){
+    var cls='pbtn'; if(userArr(i).length>0) cls+=' answered'; if(marked[i]) cls+=' marked'; if(i===currentIdx) cls+=' current';
+    ph+='<button class="'+cls+'" data-i="'+i+'">'+(i+1)+'</button>';
+  });
+  $('paletteEl').innerHTML=ph;
+  document.querySelectorAll('.pbtn').forEach(function(b){ b.addEventListener('click',function(){ currentIdx=parseInt(b.dataset.i,10); renderQuestion(); }); });
+}
+$('prevBtn').addEventListener('click',function(){ if(currentIdx>0){currentIdx--; renderQuestion();} });
+$('nextBtn').addEventListener('click',function(){ if(currentIdx<testQuestions.length-1){currentIdx++; renderQuestion();} else { finishTest(false); } });
+$('clearBtn').addEventListener('click',function(){ userAnswers[currentIdx]=[]; renderQuestion(); });
+$('markBtn').addEventListener('click',function(){ marked[currentIdx]=!marked[currentIdx]; renderQuestion(); });
+$('submitTopBtn').addEventListener('click',function(){ finishTest(false); });
+$('submitBtn2').addEventListener('click',function(){ finishTest(false); });
+$('quitBtn').addEventListener('click',function(){ clearInterval(timerInt); showView('view-home'); });
+
+function finishTest(auto){
+  if(testFinished) return; testFinished=true; clearInterval(timerInt);
+  var correct=0,wrong=0,skipped=0, scorable=0;
+  testQuestions.forEach(function(q,i){
+    var ca=corrArr(q); var ua=userArr(i);
+    if(!ca.length){ if(ua.length===0) skipped++; return; }
+    scorable++;
+    if(ua.length===0) skipped++;
+    else if(setsEqual(ua,ca)) correct++;
+    else wrong++;
+  });
+  var total=testQuestions.length;
+  var pct = scorable? Math.round(correct/scorable*100) : 0;
+  var accuracy = (correct+wrong)? Math.round(correct/(correct+wrong)*100):0;
+  // Headline
+  var headline = pct>=90?'Outstanding! 🎉': pct>=75?'Great job!': pct>=60?'Good effort!': pct>=40?'Keep practicing':'Don\'t give up — review & retry';
+  $('resultHeadline').textContent=headline;
+  $('resultSub').textContent='You scored '+correct+' out of '+(scorable||total)+' • '+sourceName+' • Finished in '+fmtTime(elapsedSec)+(auto?' (time expired)':'');
+  $('scorePct').textContent=pct+'%';
+  $('scoreFraction').textContent=correct+' / '+(scorable||total)+' correct';
+  var circ=427; $('ringFg').style.strokeDashoffset = circ - (circ*pct/100);
+  var stats=[
+    {v:total,l:'Total questions'},{v:correct,l:'Correct ✓'},{v:wrong,l:'Wrong ✕'},{v:skipped,l:'Skipped'},{v:accuracy+'%',l:'Accuracy'},{v:fmtTime(elapsedSec),l:'Time taken'}
+  ];
+  $('statsGrid').innerHTML=stats.map(function(s){return '<div class="stat2"><strong>'+s.v+'</strong><span>'+s.l+'</span></div>';}).join('');
+  renderReview('all');
+  initAiTutor();
+  showView('view-result');
+  if(typeof updateMiniContext==='function'){ try{ miniGreetedFor=''; updateMiniContext(true); }catch(e){} }
+  // store for download
+  window._lastResult={correct:correct,wrong:wrong,skipped:skipped,total:total,pct:pct,accuracy:accuracy,time:elapsedSec,source:sourceName};
+}
+function renderReview(filter){
+  var html='';
+  testQuestions.forEach(function(q,i){
+    var ca=corrArr(q); var ua=userArr(i); var multi=ca.length>1;
+    var status = !ca.length ? 'skipped' : (ua.length===0?'skipped': setsEqual(ua,ca)?'correct':'wrong');
+    if(filter!=='all' && status!==filter) return;
+    if(filter!=='all' && !ca.length && ua.length>0) return;
+    var statusLabel = !ca.length?'No answer key — unscored': (status==='wrong' && multi && ua.some(function(x){return ca.indexOf(x)!==-1;}) ? 'wrong — partially correct selection' : status);
+    html+='<div class="review-item '+status+'"><p class="q">'+(i+1)+'. '+escapeHtml(q.text)+' <span style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">'+statusLabel+(multi?' • multi-answer':'')+'</span></p>';
+    if(ca.length){
+      var correctText = ca.map(function(idx){return String.fromCharCode(65+idx)+'. '+escapeHtml(q.options[idx]);}).join(' &nbsp;•&nbsp; ');
+      var yourText = ua.length ? ua.map(function(idx){return String.fromCharCode(65+idx)+'. '+escapeHtml(q.options[idx]);}).join(' &nbsp;•&nbsp; ') : '';
+      html+='<div class="ansline" style="background:var(--green-bg);border:1px solid #a6f4c5;border-radius:8px;padding:8px 10px;margin:6px 0"><b>Correct answer'+(multi?'s':'')+': '+correctText+'</b>'+(ua.length?' &nbsp;•&nbsp; Your choice'+(ua.length>1?'s':'')+': <b>'+yourText+'</b> '+(setsEqual(ua,ca)?'✓':'✕ — need exactly the correct set'):' &nbsp;•&nbsp; You skipped this')+'</div>';
+    }
+    q.options.forEach(function(o,oi){
+      var isCorrect=ca.indexOf(oi)!==-1, isUser=ua.indexOf(oi)!==-1;
+      var style=''; var bg='';
+      if(isCorrect){ style='color:var(--green);font-weight:700'; bg='background:var(--green-bg);border:1px solid #a6f4c5;border-radius:8px;padding:6px 8px'; }
+      if(isUser && !isCorrect){ style='color:var(--red);font-weight:700'; bg='background:var(--red-bg);border:1px solid #fecdca;border-radius:8px;padding:6px 8px'; }
+      if(isUser && isCorrect){ bg='background:var(--green-bg);border:1px solid #a6f4c5;border-radius:8px;padding:6px 8px'; }
+      html+='<div class="ansline" style="'+style+';'+bg+'">'+String.fromCharCode(65+oi)+'. '+escapeHtml(o)+(isCorrect?' ✓ Correct answer':'')+(isUser?' — Your answer':'')+'</div>';
+    });
+    if(ua.length===0) html+='<div class="ansline" style="color:var(--muted)">You skipped this question.</div>';
+    if(q.explanation) html+='<div class="ansline" style="background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-top:8px"><b>Explanation:</b> '+escapeHtml(q.explanation)+'</div>';
+    html+='<button class="btn btn-outline ai-explain-btn" data-ai-idx="'+i+'" style="margin-top:10px;font-size:13px;padding:8px 12px">💬 Ask QuizMate to explain Q'+(i+1)+'</button>';
+    html+='</div>';
+  });
+  if(!html) html='<p style="color:var(--muted)">No questions in this category.</p>';
+  $('reviewList').innerHTML=html;
+  document.querySelectorAll('.ai-explain-btn').forEach(function(b){
+    b.addEventListener('click',function(){
+      var idx=parseInt(b.dataset.aiIdx,10);
+      var sel=$('aiQSelect'); if(sel) sel.value=String(idx);
+      updateAiContextPreview();
+      var card=$('aiTutorCard'); if(card) card.scrollIntoView({behavior:'smooth',block:'start'});
+      sendAiMessage('Explain question '+(idx+1)+' and why the correct answer is correct'+(userArr(idx).length?' and why my choice was wrong or right.':'.'));
+    });
+  });
+}
+document.querySelectorAll('.filter-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.filter-btn').forEach(function(x){x.className='btn btn-outline filter-btn';});
+    b.className='btn btn-primary filter-btn'; renderReview(b.dataset.f);
+  });
+});
+$('retakeBtn').addEventListener('click',function(){ startTest(); });
+$('newTestBtn').addEventListener('click',function(){ showView('view-home'); });
+$('downloadBtn').addEventListener('click',function(){
+  var r=window._lastResult; if(!r) return;
+  var lines=['MCQ TEST RESULT','Source: '+r.source,'Score: '+r.correct+'/'+r.total+' ('+r.pct+'%)','Correct: '+r.correct+'  Wrong: '+r.wrong+'  Skipped: '+r.skipped,'Accuracy: '+r.accuracy+'%','Time taken: '+fmtTime(r.time),'','REVIEW',''];
+  testQuestions.forEach(function(q,i){
+    var ca=corrArr(q); var ua=userArr(i);
+    lines.push((i+1)+'. '+q.text+(ca.length>1?' [Multi-answer: '+ca.length+' correct]':''));
+    q.options.forEach(function(o,oi){ lines.push('   '+String.fromCharCode(65+oi)+'. '+o+(ca.indexOf(oi)!==-1?' [Correct]':'')+(ua.indexOf(oi)!==-1?' [Your answer]':'')); });
+    if(ua.length===0) lines.push('   (Skipped)');
+    lines.push('');
+  });
+  var blob=new Blob([lines.join('\n')],{type:'text/plain'}); var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download='mcq-result.txt'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(url);},1000);
+});
+
+// ---------- AI TUTOR (results screen only — POSTs to /api/chat on Vercel; no API key ever lives in this page) ----------
+var aiSending=false; var aiHistory=[];
+function aiSelectedIdx(){ var sel=$('aiQSelect'); if(!sel) return -1; var v=parseInt(sel.value,10); return isNaN(v)?-1:v; }
+function buildAiContext(idx){
+  // Only the ONE question being asked about — never the whole file or other questions.
+  if(idx<0 || !testQuestions[idx]) return { scope:'general', scoreSummary: window._lastResult ? {correct:window._lastResult.correct,total:window._lastResult.total,pct:window._lastResult.pct} : null };
+  var q=testQuestions[idx]; var ca=corrArr(q); var ua=userArr(idx);
+  return {
+    scope:'single-question',
+    questionNumber: idx+1,
+    question: q.text,
+    options: q.options.map(function(o,i){ return String.fromCharCode(65+i)+'. '+o; }),
+    correctAnswers: ca.map(function(i){ return String.fromCharCode(65+i)+'. '+q.options[i]; }),
+    userAnswers: ua.map(function(i){ return String.fromCharCode(65+i)+'. '+q.options[i]; }),
+    userSkipped: ua.length===0,
+    isMultiAnswer: ca.length>1,
+    wasCorrect: ca.length>0 && setsEqual(ua,ca),
+    existingExplanation: q.explanation || ''
+  };
+}
+function addAiMessage(role, text){
+  var box=$('aiMessages'); if(!box) return null;
+  var d=document.createElement('div');
+  d.className='ai-msg '+(role==='user'?'user':role==='error'?'error':role==='loading'?'loading':'assistant');
+  d.textContent=text; box.appendChild(d); box.scrollTop=box.scrollHeight; return d;
+}
+function showAiError(msg){ var b=$('aiErrorBox'); if(!b) return; b.textContent=msg; b.style.display=msg?'block':'none'; }
+function updateAiContextPreview(){
+  var prev=$('aiContextPreview'); if(!prev) return;
+  var idx=aiSelectedIdx();
+  if(idx<0 || !testQuestions[idx]){ prev.textContent='General mode: ask about your overall result. Pick a specific question above for a focused explanation.'; return; }
+  var q=testQuestions[idx]; var ca=corrArr(q); var ua=userArr(idx);
+  var correctTxt = ca.length ? ca.map(function(i){return String.fromCharCode(65+i);}).join(', ') : 'no answer key';
+  var yourTxt = ua.length ? ua.map(function(i){return String.fromCharCode(65+i);}).join(', ') : 'skipped';
+  prev.textContent='Selected: Q'+(idx+1)+' • Correct: '+correctTxt+' • Your choice: '+yourTxt+(ca.length>1?' • Multi-answer question':'')+'. Only this question will be sent to QuizMate.';
+}
+function initAiTutor(){
+  var sel=$('aiQSelect'); if(!sel) return;
+  aiHistory=[]; aiSending=false; showAiError('');
+  var html='<option value="-1">General — ask about my overall result</option>';
+  testQuestions.forEach(function(q,i){
+    var ca=corrArr(q); var ua=userArr(i);
+    var tag = !ca.length ? 'unscored' : (ua.length===0 ? 'skipped' : (setsEqual(ua,ca) ? '✓ correct' : '✕ wrong'));
+    var label='Q'+(i+1)+' ('+tag+') — '+q.text.replace(/\s+/g,' ').slice(0,70)+(q.text.length>70?'…':'');
+    html+='<option value="'+i+'">'+escapeHtml(label)+'</option>';
+  });
+  sel.innerHTML=html;
+  // Default to the first wrong question, if any — that's what most users want explained.
+  var firstWrong=-1;
+  testQuestions.forEach(function(q,i){ if(firstWrong===-1){ var ca=corrArr(q); var ua=userArr(i); if(ca.length && ua.length && !setsEqual(ua,ca)) firstWrong=i; } });
+  sel.value=String(firstWrong);
+  var box=$('aiMessages'); if(box) box.innerHTML='';
+  addAiMessage('assistant','Hi! I’m QuizMate. Your test is finished, so I can explain things now. '+(firstWrong>=0?('I\'ve picked Question '+(firstWrong+1)+', the first one you got wrong — or choose any other question above.'):'Pick any question above')+' and tap “Explain this question”, or type your own question below.');
+  updateAiContextPreview();
+  var sendBtn=$('aiSendBtn'); if(sendBtn){ sendBtn.disabled=false; sendBtn.textContent='Send →'; }
+}
+function aiBackendErrorMessage(status, serverMsg){
+  var base='QuizMate backend not configured yet — POST /api/chat '+(status?('returned '+status):'could not be reached')+'. ';
+  if(status===404) base+='That means the api/chat.js function isn\'t deployed with this page yet. Deploy this page on Vercel together with api/chat.js (example in the setup note above) and set GROQ_API_KEY in Vercel\'s Environment Variables, then redeploy. ';
+  else if(serverMsg && /GROQ_API_KEY|api key/i.test(serverMsg)) base+='The function is running but its key is missing: set GROQ_API_KEY in Vercel → Settings → Environment Variables and redeploy. ';
+  else if(serverMsg) base+='The function said: “'+serverMsg+'”. ';
+  else base+='Deploy api/chat.js on Vercel and set GROQ_API_KEY in the host\'s Environment Variables, then redeploy. ';
+  return base+'Your test, score and review above are unaffected.';
+}
+async function sendAiMessage(text){
+  text=(text||'').trim(); if(!text || aiSending) return;
+  // Fair-test guard: the tutor only ever runs from the results screen.
+  if(!$('view-result').classList.contains('active')) return;
+  var inp=$('aiInput'); if(inp) inp.value='';
+  showAiError('');
+  var idx=aiSelectedIdx();
+  var context=buildAiContext(idx);
+  addAiMessage('user', text);
+  aiHistory.push({role:'user', content:text});
+  aiSending=true;
+  var sendBtn=$('aiSendBtn'); if(sendBtn){ sendBtn.disabled=true; sendBtn.textContent='Thinking…'; }
+  var loadingEl=addAiMessage('loading','QuizMate is thinking…');
+  try{
+    var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:text, context:context, history:aiHistory.slice(-6)})});
+    var raw=await res.text(); var data=null;
+    try{ data=JSON.parse(raw); }catch(e){ data=null; }
+    if(!res.ok){
+      var serverMsg=(data && (data.error || data.message)) ? String(data.error||data.message) : '';
+      throw {status:res.status, serverMsg:serverMsg};
+    }
+    var reply='';
+    if(data){
+      reply = data.reply || data.message || data.answer || data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    }
+    if(!reply) throw {status:res.status, serverMsg:'The backend replied without any message text.'};
+    if(loadingEl) loadingEl.remove();
+    addAiMessage('assistant', String(reply));
+    aiHistory.push({role:'assistant', content:String(reply)});
+  }catch(err){
+    if(loadingEl) loadingEl.remove();
+    var status=(err && err.status) ? err.status : 0;
+    var serverMsg=(err && err.serverMsg) ? err.serverMsg : '';
+    var friendly=aiBackendErrorMessage(status, serverMsg);
+    addAiMessage('error', friendly);
+    showAiError(friendly);
+  }finally{
+    aiSending=false;
+    if(sendBtn){ sendBtn.disabled=false; sendBtn.textContent='Send →'; }
+  }
+}
+(function wireAiTutor(){
+  var sendBtn=$('aiSendBtn'); var inp=$('aiInput'); var sel=$('aiQSelect'); var floatBtn=$('aiFloatBtn');
+  if(sendBtn) sendBtn.addEventListener('click',function(){ sendAiMessage(inp?inp.value:''); });
+  if(inp) inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); sendAiMessage(inp.value); } });
+  if(sel) sel.addEventListener('change',updateAiContextPreview);
+  document.querySelectorAll('.ai-quick-btn').forEach(function(b){
+    b.addEventListener('click',function(){
+      if(aiSelectedIdx()<0 && testQuestions.length){ sel.value='0'; updateAiContextPreview(); }
+      sendAiMessage(b.dataset.aiPrompt);
+    });
+  });
+  if(floatBtn) floatBtn.addEventListener('click',function(){
+    if($('view-test').classList.contains('active')) return; // hidden during test anyway
+    if(typeof toggleMiniChat==='function') toggleMiniChat();
+  });
+})();
+
+// ---------- MINI CHAT (compact floating window — own messages/input, stays over current screen) ----------
+var miniHistory=[]; var miniSending=false; var miniGreetedFor='';
+function miniContextMode(){
+  if($('view-result') && $('view-result').classList.contains('active')) return 'explain';
+  if(typeof sourceText!=='undefined' && String(sourceText||'').trim().length>=40 && (parsedQuestions.length || isSubstantiveContent(sourceText))) return 'content';
+  if(typeof sourceText!=='undefined' && String(sourceText||'').trim().length>=40) return 'content';
+  return 'none';
+}
+function addMiniMessage(role, text){
+  var box=$('miniMessages'); if(!box) return null;
+  var d=document.createElement('div');
+  d.className='mini-msg '+(role==='user'?'user':role==='error'?'error':role==='loading'?'loading':'assistant');
+  d.textContent=text; box.appendChild(d); box.scrollTop=box.scrollHeight; return d;
+}
+function updateMiniContext(silent){
+  var label=$('miniContextLabel'); var wait=$('miniWaitNote');
+  var mode=miniContextMode();
+  var ready=parsedQuestions && parsedQuestions.length>0;
+  if(label){
+    if(mode==='explain') label.textContent='Results mode — ask QuizMate to explain any question';
+    else if(mode==='content') label.textContent=(ready? (previewSuppressedForChat? (parsedQuestions.length+' questions ready in chat • ') : (parsedQuestions.length+' questions ready • ')) : 'Content loaded • ')+'“'+String(sourceName||'').slice(0,42)+'” — chat, generate, or say “start test”';
+    else label.textContent='No file loaded yet — upload to begin';
+  }
+  if(wait){
+    wait.style.display = (ready && mode!=='explain') ? 'block' : 'none';
+    if(ready && mode!=='explain') wait.innerHTML = previewSuppressedForChat
+      ? 'Test ready <b>here in QuizMate chat</b> — the “Your test is ready” box was not opened, and the test won’t start on its own. Tap <b>Start test</b> above or type “start test” here. Type “show preview” if you want the preview box.'
+      : 'Test ready — it won’t start on its own. Tap <b>Start test</b> above or type “start test” here.';
+  }
+  // Greeting per context, only when context key changes and panel is open / or messages empty
+  var key=mode+':'+(ready?parsedQuestions.length:0)+':'+sourceName+':'+(previewSuppressedForChat?'chat':'direct');
+  var box=$('miniMessages');
+  if(box && key!==miniGreetedFor){
+    var wasEmpty=!box.children.length;
+    miniGreetedFor=key;
+    if(!silent || wasEmpty){
+      if(mode==='explain') addMiniMessage('assistant','You’re on your results. Ask me to explain a question — e.g. “explain question 1” — or pick a question in QuizMate below. I can also restart the test if you type “start test”.');
+      else if(mode==='content' && ready) addMiniMessage('assistant', previewSuppressedForChat
+          ? 'Loaded “'+sourceName+'” in chat — '+parsedQuestions.length+' question(s) are ready here in QuizMate. I haven’t opened the “Your test is ready” box, and I won’t start automatically. Type “start test” when you’re ready, “show preview” if you want the preview box, or ask me anything about the content.'
+          : 'Loaded “'+sourceName+'” — '+parsedQuestions.length+' question(s) are ready in the preview above. I won’t start it automatically. Type “start test” here (or press Start test) when you’re ready, or ask me anything about the content.');
+      else if(mode==='content') addMiniMessage('assistant','I’ve read “'+sourceName+'”. This looks like study content, not a ready test. Type “generate 10 questions” and I’ll create MCQs from it right here in chat — then I’ll wait for “start test”. Or just ask me about the content.');
+      else if(!wasEmpty) addMiniMessage('assistant','Upload a file first, then I can chat about it, generate questions, or start the test on your command.');
+    }
+  }
+}
+function openMiniChat(){
+  if($('view-test').classList.contains('active')) return;
+  var p=$('miniChatPanel'); if(!p) return;
+  p.classList.add('open'); p.setAttribute('aria-hidden','false');
+  var fb=$('aiFloatBtn'); if(fb) fb.setAttribute('aria-expanded','true');
+  updateMiniContext(false);
+  var box=$('miniMessages');
+  if(box && !box.children.length){
+    var mode=miniContextMode();
+    if(mode==='none') addMiniMessage('assistant','Hi! I’m QuizMate, your AI tutor — I stay right here in this mini chat, I don’t take you to another page.\n\nUpload a PDF, Word or TXT file first (tap “Upload a file” below, or paste your content straight into this chat). Content you give me here stays in the chat — the “Your test is ready” box only opens when you upload directly on the homepage. After that you can:\n• chat about the content\n• type “generate 10 questions” for study notes\n• type “start test” when questions are ready\n\nUploading alone never starts a test — it always waits for you.');
+  }
+  var inp=$('miniInput'); if(inp) setTimeout(function(){ try{inp.focus();}catch(e){} },60);
+}
+function closeMiniChat(){
+  var p=$('miniChatPanel'); if(p){ p.classList.remove('open'); p.setAttribute('aria-hidden','true'); }
+  var fb=$('aiFloatBtn'); if(fb) fb.setAttribute('aria-expanded','false');
+}
+function toggleMiniChat(){
+  var p=$('miniChatPanel'); if(!p) return;
+  if(p.classList.contains('open')) closeMiniChat(); else openMiniChat();
+}
+function isStartTestCommand(t){
+  var s=' '+String(t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ')+' ';
+  return /\b(start|begin|launch|take|open|go)\b[^.]{0,18}\b(test|quiz|exam)\b/.test(s) || s.indexOf(' start test ')!==-1 || s.indexOf(' begin test ')!==-1;
+}
+function isGenerateCommand(t){
+  var s=String(t||'').toLowerCase();
+  return /\b(generate|create|make)\b[^.]{0,30}\b(questions?|mcqs?|quiz|test)\b/.test(s) || /^\s*generate\s*(\d+)?\s*$/.test(s);
+}
+function isShowPreviewCommand(t){
+  var s=' '+String(t||'').toLowerCase().replace(/[^a-z0-9 ]/g,' ')+' ';
+  return s.indexOf(' show preview ')!==-1 || s.indexOf(' open preview ')!==-1 || s.indexOf(' see preview ')!==-1 || s.indexOf(' show the preview ')!==-1 || s.indexOf(' preview box ')!==-1;
+}
+function isPastedContentLoad(t){
+  // Content pasted/sent INTO the chat counts as a chatbot load: MCQ-shaped text (several
+  // option markers), or a long passage. Short questions to QuizMate are never treated as a load.
+  var txt=String(t||'');
+  if(txt.length<200) return false;
+  // One count for option markers anywhere (pasting into the single-line chat input strips newlines).
+  var options=(txt.match(/(?:^|\s)[A-Ea-e][\)\.\:]\s+\S/gm)||[]).length;
+  if(options>=3) return true;
+  if(options>=2 && txt.length>=280) return true;
+  if(txt.length>=1200) return true;
+  if(txt.length>=800 && txt.indexOf('\n')!==-1) return true;
+  return false;
+}
+function parseGenerateCount(t){
+  var m=String(t||'').match(/(\d{1,2})\s*(questions?|mcqs?)?/i);
+  if(m){ var n=parseInt(m[1],10); if(n>=1 && n<=20) return n; }
+  return 10;
+}
+async function sendMiniMessage(raw){
+  var text=String(raw||'').trim(); if(!text || miniSending) return;
+  if($('view-test').classList.contains('active')) return;
+  var inp=$('miniInput'); if(inp) inp.value='';
+  // Upload shortcut
+  if(text==='__upload__'){ pendingFileSource='chatbot'; var fi=$('fileInput'); if(fi) fi.click(); return; }
+  // 0) CONTENT PASTED/SENT IN CHAT — a chatbot load: parse it, stay in chat, NO "Your test is ready" box.
+  if(isPastedContentLoad(text)){
+    addMiniMessage('user', '📄 Shared content in chat ('+text.length.toLocaleString()+' characters)');
+    miniHistory.push({role:'user', content:'[Shared content in chat, '+text.length+' characters]'});
+    handleParsed(text, 'Content shared in QuizMate chat', 'chatbot');
+    return;
+  }
+  addMiniMessage('user', text);
+  miniHistory.push({role:'user', content:text});
+  // 0b) SHOW PREVIEW command — the only way a chatbot-loaded test opens the preview box: explicit request.
+  if(isShowPreviewCommand(text)){
+    if(parsedQuestions && parsedQuestions.length>0){
+      showPreviewExplicit();
+      var pm='Here’s the “Your test is ready” preview box on the page — I’ve opened it only because you asked. Review it there, then press “Start test →” or type “start test” here.';
+      addMiniMessage('assistant', pm); miniHistory.push({role:'assistant', content:pm});
+    } else {
+      var np='There’s no test preview to show yet — upload or share some content first, or type “generate 10 questions” if you’ve shared study content.';
+      addMiniMessage('assistant', np); miniHistory.push({role:'assistant', content:np});
+    }
+    return;
+  }
+  // 1) START TEST command — local, no backend call
+  if(isStartTestCommand(text)){
+    if(parsedQuestions && parsedQuestions.length>0){
+      addMiniMessage('assistant','Starting your test now — '+parsedQuestions.length+' question(s). Good luck! (I’ll disappear during the test so I can’t give away answers.)');
+      miniHistory.push({role:'assistant', content:'Starting test.'});
+      setTimeout(function(){ closeMiniChat(); startTest(); }, 350);
+    } else if($('view-result').classList.contains('active') && testQuestions && testQuestions.length){
+      addMiniMessage('assistant','Restarting the same test for you…');
+      setTimeout(function(){ closeMiniChat(); startTest(); }, 350);
+    } else {
+      var msg='There’s no test ready to start yet — so I won’t open an empty test.\n\nDo one of these first:\n• Direct upload: upload a PDF / Word / TXT question paper above — you’ll see a preview, then say “start test” again, or\n• Study content: upload notes/a chapter, then type “generate 10 questions” — I’ll create the questions here in chat, and wait for your “start test”.';
+      addMiniMessage('assistant', msg); miniHistory.push({role:'assistant', content:msg});
+    }
+    return;
+  }
+  // 2) GENERATE command — local trigger of existing generate flow
+  if(isGenerateCommand(text)){
+    if(!(typeof sourceText!=='undefined' && String(sourceText||'').trim().length>=40)){
+      var gm='I don’t have any content to generate from yet. Upload a file with study content (notes, a chapter, an article) first, then type “generate 10 questions” again.';
+      addMiniMessage('assistant', gm); return;
+    }
+    var count=parseGenerateCount(text);
+    addMiniMessage('assistant','Generating '+count+' questions from “'+sourceName+'” with QuizMate… this can take up to a minute. The questions will appear right here in chat — I won’t open the “Your test is ready” box, and I won’t start the test automatically.');
+    miniSending=true; var sb=$('miniSendBtn'); if(sb){ sb.disabled=true; sb.textContent='Working…'; }
+    var loading=addMiniMessage('loading','QuizMate is generating questions…');
+    try{
+      var before=parsedQuestions.length;
+      var result=await generateMcqs(count, {fromChat:true});
+      if(loading) loading.remove();
+      if(result===false){
+        // generateMcqs already surfaces the detailed backend error in its panel; mirror a short version here
+        var eb=$('aiGenError'); var detail=eb && eb.textContent ? eb.textContent : 'QuizMate generation didn’t complete — the backend at /api/chat may not be deployed yet. Your content is still loaded here in chat.';
+        addMiniMessage('error', detail);
+      } else {
+        var listTxt=parsedQuestions.slice(0,5).map(function(q,i){ return (i+1)+'. '+String(q.text||'').replace(/\s+/g,' ').slice(0,110); }).join('\n');
+        var moreTxt=parsedQuestions.length>5 ? '\n… and '+(parsedQuestions.length-5)+' more.' : '';
+        var done='✓ QuizMate generated '+parsedQuestions.length+' question(s) from your content — here they are, in chat:\n'+listTxt+moreTxt+'\n\nI haven’t opened the “Your test is ready” box. Type “start test” here (or tap Start test above) when you’re ready, or type “show preview” if you want the preview box first.';
+        addMiniMessage('assistant', done); miniHistory.push({role:'assistant', content:done});
+        updateMiniContext(true);
+      }
+    }catch(e){ if(loading) loading.remove(); addMiniMessage('error','Generation failed. Please try again.'); }
+    finally{ miniSending=false; if(sb){ sb.disabled=false; sb.textContent='Send →'; } }
+    return;
+  }
+  // 3) No file yet — friendly local prompt, no backend call
+  var mode=miniContextMode();
+  if(mode==='none'){
+    var nm='I don’t have a file to work with yet. Upload a PDF, Word or TXT file (tap “Upload a file” below, or paste content right here in chat) — if it’s a question paper I’ll keep it here in QuizMate and wait for “start test”; if it’s study content, type “generate 10 questions” and I’ll build a test from it. The “Your test is ready” box only opens for direct homepage uploads.';
+    addMiniMessage('assistant', nm); miniHistory.push({role:'assistant', content:nm}); return;
+  }
+  // 4) Normal chat / explain — POST to /api/chat, render reply HERE in the mini chat (no navigation, no scrolling to the big panels)
+  miniSending=true; var sb2=$('miniSendBtn'); if(sb2){ sb2.disabled=true; sb2.textContent='Thinking…'; }
+  var loading2=addMiniMessage('loading', mode==='explain' ? 'QuizMate is explaining…' : 'QuizMate is reading your content…');
+  try{
+    var payload, fetchBody;
+    if(mode==='explain'){
+      var idx=(typeof aiSelectedIdx==='function') ? aiSelectedIdx() : -1;
+      // Allow "explain question 3" to select that question
+      var qm=text.match(/question\s*(\d+)/i); if(qm){ var qi=parseInt(qm[1],10)-1; if(qi>=0 && testQuestions[qi]){ idx=qi; var sel=$('aiQSelect'); if(sel) sel.value=String(qi); if(typeof updateAiContextPreview==='function') updateAiContextPreview(); } }
+      payload={message:text, context:(typeof buildAiContext==='function'?buildAiContext(idx):{}), history:miniHistory.slice(-6)};
+    } else {
+      payload={mode:'chat', message:text, context:{sourceName:sourceName, text:aiTruncate(sourceText)}, history:miniHistory.slice(-6)};
+    }
+    var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    var raw2=await res.text(); var data=null; try{ data=JSON.parse(raw2); }catch(e){ data=null; }
+    if(!res.ok){ var sm=(data && (data.error||data.message))?String(data.error||data.message):''; throw {status:res.status, serverMsg:sm}; }
+    var reply=data ? (data.reply||data.message||data.answer||data.text||(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)||'') : '';
+    if(!reply) throw {status:res.status, serverMsg:'The backend replied without any message text.'};
+    if(loading2) loading2.remove();
+    addMiniMessage('assistant', String(reply)); miniHistory.push({role:'assistant', content:String(reply)});
+    // Mirror into the large panels' history boxes when they exist, so both views stay consistent
+    if(mode==='explain' && typeof addAiMessage==='function'){ try{ addAiMessage('user', text); addAiMessage('assistant', String(reply)); }catch(e){} }
+    if(mode==='content'){ var cb=$('aiContentMessages'); if(cb && typeof appendChatMsg==='function'){ try{ appendChatMsg(cb,'assistant', String(reply)); }catch(e){} } }
+  }catch(err){
+    if(loading2) loading2.remove();
+    var st=(err && err.status)?err.status:0; var sm2=(err && err.serverMsg)?err.serverMsg:'';
+    var friendly=(typeof aiBackendErrorMessage==='function') ? aiBackendErrorMessage(st, sm2) : 'QuizMate backend not configured yet — deploy /api/chat on Vercel with GROQ_API_KEY. Your test and files are unaffected.';
+    addMiniMessage('error', friendly);
+  }finally{ miniSending=false; if(sb2){ sb2.disabled=false; sb2.textContent='Send →'; } }
+}
+(function wireMiniChat(){
+  var send=$('miniSendBtn'); var inp=$('miniInput');
+  if(send) send.addEventListener('click',function(){ sendMiniMessage(inp?inp.value:''); });
+  if(inp) inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); sendMiniMessage(inp.value); } });
+  var c=$('miniCloseBtn'); if(c) c.addEventListener('click',closeMiniChat);
+  var m=$('miniMinBtn'); if(m) m.addEventListener('click',closeMiniChat);
+  document.querySelectorAll('[data-mini-cmd]').forEach(function(b){
+    b.addEventListener('click',function(){
+      var cmd=b.getAttribute('data-mini-cmd');
+      if(cmd==='__upload__'){ pendingFileSource='chatbot'; var fi=$('fileInput'); if(fi) fi.click(); addMiniMessage('assistant','Pick a PDF, Word (.docx) or TXT file. Because you’re uploading through QuizMate chat, it will load right here in the chat — the “Your test is ready” box won’t open. After it loads, say “start test” or “generate 10 questions” when you’re ready.'); return; }
+      sendMiniMessage(cmd);
+    });
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeMiniChat(); });
+})();
+
+// ---------- AI CONTENT MODE (home screen only — generate MCQs from study content + chat about the loaded file) ----------
+// Both features POST to the same /api/chat backend as the post-test tutor. No API key ever lives in this page.
+// These panels live in the home view, so they are unreachable while a test is running; the send functions
+// additionally refuse to run unless the home view is active.
+var AI_TEXT_LIMIT = 12000; // characters of uploaded text sent to /api/chat per request
+function isSubstantiveContent(t){ return String(t||'').trim().length>=200; }
+function aiTruncate(t){ t=String(t||''); return t.length>AI_TEXT_LIMIT ? t.slice(0,AI_TEXT_LIMIT) : t; }
+function showBoxError(id,msg){ var b=$(id); if(!b) return; b.textContent=msg||''; b.style.display=msg?'block':'none'; }
+function appendChatMsg(box, role, text){
+  if(!box) return null;
+  var d=document.createElement('div');
+  d.className='ai-msg '+(role==='user'?'user':role==='error'?'error':role==='loading'?'loading':'assistant');
+  d.textContent=text; box.appendChild(d); box.scrollTop=box.scrollHeight; return d;
+}
+function resetContentChat(){
+  contentChatHistory=[]; aiGenerating=false; aiContentSending=false;
+  var box=$('aiContentMessages'); if(box) box.innerHTML='';
+  var gb=$('aiGenBtn'); if(gb){ gb.disabled=false; gb.textContent='✦ Generate MCQs'; }
+  var gs=$('aiGenStatus'); if(gs) gs.textContent='';
+  showBoxError('aiGenError',''); showBoxError('aiContentError','');
+  var inp=$('aiContentInput'); if(inp) inp.value='';
+  var sb=$('aiContentSendBtn'); if(sb){ sb.disabled=false; sb.textContent='Send →'; }
+}
+function showAiContentSection(){
+  var sec=$('aiContentSection'); if(!sec) return;
+  if(!isSubstantiveContent(sourceText)){ sec.style.display='none'; return; }
+  sec.style.display='block';
+  var n=parsedQuestions.length;
+  var few = (n===0 || n<=3);
+  $('aiGenerateBlock').style.display = few ? 'block' : 'none';
+  if(few){
+    $('aiGenerateMsg').textContent = n===0
+      ? 'This looks like study content, not a question paper — no ready-made questions were found in it. Generate MCQs from it with QuizMate?'
+      : 'Only '+n+' ready-made question'+(n===1?' was':'s were')+' found in this file — it reads mostly like study content. You can start that small test above, or generate a full set of MCQs from the content with QuizMate:';
+  }
+  var notice='QuizMate reads the text loaded from “'+sourceName+'” and sends it with your message to /api/chat.';
+  if(sourceText.length>AI_TEXT_LIMIT) notice+=' Your file is long, so only the first ~'+AI_TEXT_LIMIT.toLocaleString()+' characters are sent each time.';
+  notice+=' Nothing from here is available during a test.';
+  $('aiContentNotice').textContent=notice;
+  var box=$('aiContentMessages');
+  if(box && !box.children.length){
+    appendChatMsg(box,'assistant','Hi! I\'m QuizMate — I\'ve read “'+sourceName+'”. Ask me anything about it — a summary, the key points, a definition — '+(few?'or use the generator above to turn it into a test.':'and good luck on the test!'));
+  }
+}
+function normCorrectIndices(q, nOpts){
+  var out=[];
+  function pushIdx(i){ if(typeof i==='number' && isFinite(i) && i>=0 && i<nOpts && out.indexOf(i)===-1) out.push(i); }
+  function pushLetter(tok){ var t=String(tok||'').trim().toUpperCase(); if(/^[A-E]$/.test(t)) pushIdx(t.charCodeAt(0)-65); }
+  if(Array.isArray(q.correctIndices)) q.correctIndices.forEach(pushIdx);
+  if(typeof q.correctIndex==='number') pushIdx(q.correctIndex);
+  if(Array.isArray(q.correctAnswers)) q.correctAnswers.forEach(function(x){ if(typeof x==='number') pushIdx(x); else pushLetter(x); });
+  var single = (typeof q.correctAnswer==='string') ? q.correctAnswer : (typeof q.answer==='string' ? q.answer : '');
+  if(single) single.split(/[^A-Ea-e]+/).forEach(pushLetter);
+  return out.sort(function(a,b){return a-b;});
+}
+function questionsFromAiData(data){
+  // Preferred shape: { questions: [ { question|text, options:[...], correctIndex|correctIndices|answer } ] }
+  if(data && Array.isArray(data.questions) && data.questions.length){
+    var gen = data.questions.map(function(q,i){
+      var rawOpts = q.options;
+      if(rawOpts && !Array.isArray(rawOpts)) rawOpts = ['A','B','C','D','E'].map(function(L){ return rawOpts[L]; }).filter(function(x){ return x!=null; });
+      var opts = (rawOpts||[]).map(function(o){ return String(o).replace(/^\s*[A-Ea-e]\s*[\)\.\:\-]\s+/,'').trim(); });
+      var ci = normCorrectIndices(q, opts.length);
+      return { text:String(q.question||q.text||'').trim(), options:opts, correctIndex:ci.length?ci[0]:-1, correctIndices:ci, explanation:String(q.explanation||''), originalIndex:i, id:i+1 };
+    }).filter(function(q){ return q.text && q.options.length>=2; });
+    if(gen.length){
+      var scored=gen.filter(function(q){return corrArr(q).length>0;}).length;
+      lastParseStats={parsed:gen.length, withAnswer:scored, withoutAnswer:gen.length-scored, multiAnswer:gen.filter(function(q){return corrArr(q).length>1;}).length, skippedBlocks:0, skippedLines:[], totalNonEmpty:0};
+      return gen;
+    }
+  }
+  // Fallback shape: { reply: "<questions in this app's text format>" } — run it through the normal parser.
+  var replyText = data ? String(data.reply || data.text || data.content || '') : '';
+  if(replyText) return parseMCQs(replyText);
+  return [];
+}
+async function generateMcqs(overrideCount, opts){
+  // opts.fromChat === true when QuizMate chat triggered the generation: the questions are
+  // returned inside the chat and the "Your test is ready" box must NOT open.
+  var fromChat = !!(opts && (opts===true || opts.fromChat));
+  if(aiGenerating) return false;
+  if(!$('view-home').classList.contains('active')) return false; // home screen only — never during a test
+  if(!isSubstantiveContent(sourceText)){ showBoxError('aiGenError','Load a file (or paste some content) first, then generate questions from it.'); return false; }
+  var count=(typeof overrideCount==='number' && overrideCount>0) ? Math.max(1,Math.min(20,overrideCount)) : (parseInt($('aiGenCount').value,10)||10);
+  // Sync the visible selector when the count is one of the offered values
+  var selEl=$('aiGenCount'); if(selEl && [5,10,15,20].indexOf(count)!==-1) selEl.value=String(count);
+  aiGenerating=true; showBoxError('aiGenError','');
+  var btn=$('aiGenBtn'); btn.disabled=true; btn.textContent='Generating…';
+  var status=$('aiGenStatus');
+  status.textContent='Asking QuizMate to write '+count+' questions from “'+sourceName+'” — this can take up to a minute…';
+  try{
+    var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'generate', text:aiTruncate(sourceText), count:count, sourceName:sourceName})});
+    var raw=await res.text(); var data=null;
+    try{ data=JSON.parse(raw); }catch(e){ data=null; }
+    if(!res.ok){
+      var serverMsg=(data && (data.error || data.message)) ? String(data.error||data.message) : '';
+      throw {status:res.status, serverMsg:serverMsg};
+    }
+    var gen=questionsFromAiData(data);
+    if(!gen || !gen.length) throw {plain:'QuizMate replied, but its answer didn\'t contain usable questions in the expected format. Try again, or pick a smaller question count.'};
+    var scored=gen.filter(function(q){return corrArr(q).length>0;}).length;
+    parsedQuestions=gen;
+    sourceName='QuizMate-generated from '+sourceName.replace(/^(AI-generated|QuizMate-generated) from\s+/i,'');
+    if(fromChat){
+      // CHAT GENERATION: questions live in the chat result (the mini-chat caller lists them).
+      // Do NOT render/open the "Your test is ready" box, do NOT scroll away, never auto-start.
+      lastLoadSource='chatbot'; previewSuppressedForChat=true;
+      $('previewSection').style.display='none';
+      status.textContent='✓ QuizMate generated '+gen.length+' questions ('+scored+' scored) — they’re shown in the QuizMate chat. Type “start test” there when you’re ready.';
+    } else {
+      // DIRECT (home panel) generation: preview box as before, still NO AUTO-START —
+      // show the preview and wait for Start test / "start test" command.
+      previewSuppressedForChat=false;
+      renderPreview();
+      status.textContent='✓ Generated '+gen.length+' questions ('+scored+' scored) from your content. The preview is above — press “Start test →” when you\'re ready. You can also generate again with a different count.';
+    }
+    if(typeof updateMiniContext==='function') updateMiniContext(true);
+    return gen.length;
+  }catch(err){
+    if(err && err.plain){ showBoxError('aiGenError', err.plain); }
+    else{
+      var status2=(err && err.status) ? err.status : 0;
+      var serverMsg2=(err && err.serverMsg) ? err.serverMsg : '';
+      showBoxError('aiGenError', aiBackendErrorMessage(status2, serverMsg2));
+    }
+    status.textContent='';
+    return false;
+  }finally{
+    aiGenerating=false;
+    btn.disabled=false; btn.textContent='✦ Generate MCQs';
+  }
+}
+async function sendContentChat(text){
+  text=(text||'').trim(); if(!text || aiContentSending) return;
+  if(!$('view-home').classList.contains('active')) return; // home screen only — never during a test
+  if(!isSubstantiveContent(sourceText)){ showBoxError('aiContentError','Load a file (or paste some content) first, then ask about it.'); return; }
+  var inp=$('aiContentInput'); if(inp) inp.value='';
+  showBoxError('aiContentError','');
+  var box=$('aiContentMessages');
+  appendChatMsg(box,'user',text);
+  contentChatHistory.push({role:'user', content:text});
+  aiContentSending=true;
+  var btn=$('aiContentSendBtn'); if(btn){ btn.disabled=true; btn.textContent='Thinking…'; }
+  var loadingEl=appendChatMsg(box,'loading','QuizMate is reading your content…');
+  try{
+    var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'chat', message:text, context:{sourceName:sourceName, text:aiTruncate(sourceText)}, history:contentChatHistory.slice(-6)})});
+    var raw=await res.text(); var data=null;
+    try{ data=JSON.parse(raw); }catch(e){ data=null; }
+    if(!res.ok){
+      var serverMsg=(data && (data.error || data.message)) ? String(data.error||data.message) : '';
+      throw {status:res.status, serverMsg:serverMsg};
+    }
+    var reply='';
+    if(data){
+      reply = data.reply || data.message || data.answer || data.text || (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+    }
+    if(!reply) throw {status:res.status, serverMsg:'The backend replied without any message text.'};
+    if(loadingEl) loadingEl.remove();
+    appendChatMsg(box,'assistant',String(reply));
+    contentChatHistory.push({role:'assistant', content:String(reply)});
+  }catch(err){
+    if(loadingEl) loadingEl.remove();
+    var status=(err && err.status) ? err.status : 0;
+    var serverMsg2=(err && err.serverMsg) ? err.serverMsg : '';
+    var friendly=aiBackendErrorMessage(status, serverMsg2);
+    appendChatMsg(box,'error',friendly);
+    showBoxError('aiContentError',friendly);
+  }finally{
+    aiContentSending=false;
+    if(btn){ btn.disabled=false; btn.textContent='Send →'; }
+  }
+}
+(function wireAiContent(){
+  var genBtn=$('aiGenBtn');
+  if(genBtn) genBtn.addEventListener('click',generateMcqs);
+  var sendBtn=$('aiContentSendBtn'); var inp=$('aiContentInput');
+  if(sendBtn) sendBtn.addEventListener('click',function(){ sendContentChat(inp?inp.value:''); });
+  if(inp) inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); sendContentChat(inp.value); } });
+})();
+</script>
+</body>
+</html>
