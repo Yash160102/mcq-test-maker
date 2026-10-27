@@ -294,7 +294,7 @@ pre.ai-backend{background:#101828;color:#e4e7ec;padding:14px;border-radius:12px;
           </div>
           <span class="badge badge-green">Before the test</span>
         </div>
-        <div class="ai-setup"><b>Setup note:</b> QuizMate uses a small backend function at <code>/api/chat</code> on Vercel reading <code>GROQ_API_KEY</code> from the host's environment variables (the key is never in this page). It works as a general AI assistant (<code>mode: "general"</code> — no file or content required), as well as for content chat, MCQ generation and post-test explanations. Until that function is deployed you'll see a clear “backend not configured” message — uploading files and taking parsed tests keep working either way. These panels live on this home screen only, so they're never available during a test.</div>
+        <div class="ai-setup"><b>Setup note:</b> QuizMate uses a small backend function at <code>/api/chat</code> on Vercel reading <code>GROQ_API_KEY</code> from the host's environment variables (the key is never in this page). It works as a general AI assistant (<code>mode: "general"</code> — no file or content required), as well as for content chat, MCQ generation and post-test explanations. Models: <code>openai/gpt-oss-120b</code> is the primary, with <code>meta-llama/llama-4-scout-17b-16e-instruct</code> (llama-4-scout) and <code>qwen/qwen3-32b</code> (qwen3) as fallbacks — <code>GROQ_MODEL</code> in Vercel can override the primary. A Groq 404 means the model is unavailable for that key, not that the function is missing. Until that function is deployed you'll see a clear “backend not configured” message — uploading files and taking parsed tests keep working either way. These panels live on this home screen only, so they're never available during a test.</div>
 
         <div class="ai-gen-box" id="aiGenerateBlock" style="display:none">
           <b style="font-size:16px">📝 Generate MCQs from this content</b>
@@ -412,7 +412,7 @@ An “Answer: B” line instead of the ✓ marker also works.</pre>
         </div>
         <span class="badge badge-green">Post-test only</span>
       </div>
-      <div class="ai-setup"><b>Setup note:</b> QuizMate talks to a small backend function at <code>/api/chat</code> on Vercel (<code>api/chat.js</code>, reading <code>GROQ_API_KEY</code> from the host's environment variables — the key is never in this page). That function is a <b>separate deploy file you add on Vercel</b>. Until it's deployed, sending a message below shows a clear “backend not configured” message — your test and results keep working normally either way.</div>
+      <div class="ai-setup"><b>Setup note:</b> QuizMate talks to a small backend function at <code>/api/chat</code> on Vercel (<code>api/chat.js</code>, reading <code>GROQ_API_KEY</code> from the host's environment variables — the key is never in this page). That function is a <b>separate deploy file you add on Vercel</b>. It calls Groq with <code>openai/gpt-oss-120b</code> first, then <code>meta-llama/llama-4-scout-17b-16e-instruct</code> (llama-4-scout) and <code>qwen/qwen3-32b</code> (qwen3) as fallbacks; <code>GROQ_MODEL</code> in Vercel can override the primary. A Groq 404 means the model is unavailable for that key, not that the function is missing. Until it's deployed, sending a message below shows a clear “backend not configured” message — your test and results keep working normally either way.</div>
 
       <label style="font-weight:700;font-size:13px;display:block;margin-top:16px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)" for="aiQSelect">Question to ask about</label>
       <select class="ai-select" id="aiQSelect"></select>
@@ -434,7 +434,7 @@ An “Answer: B” line instead of the ✓ marker also works.</pre>
 
       <details style="margin-top:10px">
         <summary style="font-weight:700;font-size:14px;cursor:pointer">For Yash: the Vercel backend file to add (api/chat.js)</summary>
-        <p style="color:var(--muted);font-size:13.5px;line-height:1.6;margin:8px 0 0">Deploy this page on Vercel together with this one function file, then set <b>GROQ_API_KEY</b> in Vercel → Project → Settings → Environment Variables and redeploy. This page sends top-level fields only — <b>POST { mode, content, question, options, correctAnswers, userChoice, message, count, history }</b> — <code>mode: "general"</code> with just <code>message</code> and <code>history</code> (no file, content or question required — this is how QuizMate answers any general question, before or after a test), <code>mode: "chat"</code> with the uploaded file's text in top-level <code>content</code> (truncated to 12,000 chars) plus <code>message</code> and <code>history</code> when the question is about that file, <code>mode: "generate"</code> with the file text in top-level <code>content</code> plus a question <code>count</code>, and <code>mode: "explain"</code> with top-level <code>question</code> (string), <code>options</code> (array of raw option strings, no “A. ” prefix), <code>correctAnswers</code> (array of letters like <code>["B"]</code>), <code>userChoice</code> (a letter, an array of letters, or <code>"skipped"</code>) plus <code>message</code> — and expects <b>{ reply }</b> back (for generate, the reply is the new questions written in this app's normal text format, so the page can parse, preview and score them like any uploaded paper). The backend below also accepts the older <code>context.*</code> / <code>text</code> shapes as a fallback, but this page no longer sends fields nested under <code>context</code>.</p>
+        <p style="color:var(--muted);font-size:13.5px;line-height:1.6;margin:8px 0 0">Deploy this page on Vercel together with this one function file, then set <b>GROQ_API_KEY</b> in Vercel → Project → Settings → Environment Variables and redeploy. This page sends top-level fields only — <b>POST { mode, content, question, options, correctAnswers, userChoice, message, count, history }</b> — <code>mode: "general"</code> with just <code>message</code> and <code>history</code> (no file, content or question required — this is how QuizMate answers any general question, before or after a test), <code>mode: "chat"</code> with the uploaded file's text in top-level <code>content</code> (truncated to 12,000 chars) plus <code>message</code> and <code>history</code> when the question is about that file, <code>mode: "generate"</code> with the file text in top-level <code>content</code> plus a question <code>count</code>, and <code>mode: "explain"</code> with top-level <code>question</code> (string), <code>options</code> (array of raw option strings, no “A. ” prefix), <code>correctAnswers</code> (array of letters like <code>["B"]</code>), <code>userChoice</code> (a letter, an array of letters, or <code>"skipped"</code>) plus <code>message</code> — and expects <b>{ reply }</b> back (for generate, the reply is the new questions written in this app's normal text format, so the page can parse, preview and score them like any uploaded paper). Models in the backend below: primary <code>openai/gpt-oss-120b</code>, fallbacks <code>meta-llama/llama-4-scout-17b-16e-instruct</code> (llama-4-scout) and <code>qwen/qwen3-32b</code> (qwen3); <code>GROQ_MODEL</code> in Vercel Environment Variables can override the primary (add it next to <code>GROQ_API_KEY</code> and redeploy). A Groq 404 in that backend means the model is unavailable for that key, not that the function is missing — it tries the fallbacks and, if all fail, returns 502 with the Groq message instead of passing a 404 through. The backend below also accepts the older <code>context.*</code> / <code>text</code> shapes as a fallback, but this page no longer sends fields nested under <code>context</code>.</p>
         <pre class="ai-backend">// api/chat.js — Vercel serverless function (separate deploy file, NOT part of this page)
 // Contract (top-level fields): { mode, content, question, options, correctAnswers, userChoice, message, count, history }
 export default async function handler(req, res) {
@@ -471,14 +471,26 @@ export default async function handler(req, res) {
     system = 'You are QuizMate, a friendly general AI assistant. The test is already finished. When the student asks about the question provided, explain clearly why the correct answer is correct and why their choice was wrong, and do not invent a different answer key. When they ask a general question unrelated to that question, answer it normally from your general knowledge.';
     user = 'Question: ' + qText + '\nOptions: ' + JSON.stringify(opts) + '\nCorrect answers: ' + JSON.stringify(correct) + '\nUser choice: ' + JSON.stringify(choice) + '\n\nStudent asks: ' + message;
   }
-  const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
-    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: [{ role: 'system', content: system }, { role: 'user', content: user }] })
-  });
-  const data = await r.json();
-  if (!r.ok) return res.status(502).json({ error: (data &amp;&amp; data.error &amp;&amp; data.error.message) || 'Groq request failed' });
-  return res.status(200).json({ reply: data.choices[0].message.content });
+  // Groq models: primary openai/gpt-oss-120b, then llama-4-scout and qwen3
+  // fallbacks. GROQ_MODEL (Vercel env var) overrides the primary when set.
+  // A Groq 404 / model_not_found means the MODEL is unavailable for this key
+  // — NOT that this function is missing — so it is never passed through as
+  // this function's own 404: try the next model, and if every model fails
+  // return 502 with the Groq message, so the page can show it plainly.
+  const MODELS = [...new Set([process.env.GROQ_MODEL, 'openai/gpt-oss-120b', 'meta-llama/llama-4-scout-17b-16e-instruct', 'qwen/qwen3-32b'].filter(Boolean))];
+  let groqError = '';
+  for (const model of MODELS) {
+    const r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+      body: JSON.stringify({ model: model, messages: [{ role: 'system', content: system }, { role: 'user', content: user }] })
+    });
+    const data = await r.json().catch(() =&gt; null);
+    if (r.ok) return res.status(200).json({ reply: data.choices[0].message.content });
+    groqError = (data &amp;&amp; data.error &amp;&amp; data.error.message) || ('Groq request failed (' + r.status + ')');
+    if (r.status !== 404) break; // only a model-not-found 404 falls through to the next model
+  }
+  return res.status(502).json({ error: 'Groq model unavailable: ' + groqError + ' (tried: ' + MODELS.join(', ') + '). A Groq 404 means the model is unavailable for this GROQ_API_KEY, not that api/chat.js is missing — set GROQ_MODEL in Vercel to a model your key can use.' });
 }</pre>
       </details>
     </div>
@@ -1342,8 +1354,9 @@ function initAiTutor(){
   updateAiContextPreview();
   var sendBtn=$('aiSendBtn'); if(sendBtn){ sendBtn.disabled=false; sendBtn.textContent='Send →'; }
 }
-function aiBackendErrorMessage(status, serverMsg){
+function aiBackendErrorMessage(status, serverMsg, rawBody){
   var msg = serverMsg ? String(serverMsg).trim() : '';
+  var raw = rawBody ? String(rawBody) : '';
   var isMissingKey = /GROQ_API_KEY|api key/i.test(msg);
   // 400 = the request itself was rejected — show the server's message plainly.
   // It must NOT be labelled "backend not configured".
@@ -1351,12 +1364,28 @@ function aiBackendErrorMessage(status, serverMsg){
     if(msg) return 'QuizMate couldn\'t use that request: '+msg+' Your test, score and review are unaffected.';
     return 'QuizMate couldn\'t use that request (400). Please try again — your test, score and review are unaffected.';
   }
-  // "Backend not configured" is reserved for 404 / unreachable / missing-key only.
+  // "Backend not configured" is reserved for a missing key, an unreachable
+  // endpoint, or a TRUE missing-function 404 (see below) only.
   if(isMissingKey){
-    return 'QuizMate backend not configured yet — the function is running but its key is missing: set GROQ_API_KEY in Vercel → Settings → Environment Variables and redeploy. Your test, score and review are unaffected.';
+    return 'QuizMate backend not configured yet — the function is running but its key is missing: set GROQ_API_KEY in Vercel \u2192 Settings \u2192 Environment Variables and redeploy. Your test, score and review are unaffected.';
   }
   if(status===404){
-    return 'QuizMate backend not configured yet — POST /api/chat returned 404. That means the api/chat.js function isn\'t deployed with this page yet. Deploy this page on Vercel together with api/chat.js (example in the setup note above) and set GROQ_API_KEY in Vercel\'s Environment Variables, then redeploy. Your test, score and review are unaffected.';
+    // A 404 WITH a JSON error message came FROM the deployed function itself
+    // (for example the backend wrapping a Groq model-not-found error). That is
+    // NOT a missing Vercel function — show the server's message plainly and
+    // never label it "api/chat.js isn't deployed".
+    if(msg){
+      return 'QuizMate couldn\'t reply: '+msg+' Your test, score and review are unaffected.';
+    }
+    // No JSON error from the function: only an empty body or Vercel's own
+    // NOT_FOUND page means the function itself is missing from this deployment.
+    var isVercelNotFound = !raw.trim() || /NOT_FOUND|The page could not be found|DEPLOYMENT_NOT_FOUND/i.test(raw);
+    if(isVercelNotFound){
+      return 'QuizMate backend not configured yet — POST /api/chat returned 404. That means the api/chat.js function isn\'t deployed with this page yet. Deploy this page on Vercel together with api/chat.js (example in the setup note above) and set GROQ_API_KEY in Vercel\'s Environment Variables, then redeploy. Your test, score and review are unaffected.';
+    }
+    // 404 with a non-JSON, non-Vercel body and no function message: still do
+    // not claim the function is missing — report it plainly.
+    return 'QuizMate couldn\'t reply: POST /api/chat returned 404. Your test, score and review are unaffected.';
   }
   if(!status){
     return 'QuizMate backend not configured yet — POST /api/chat could not be reached. Check that api/chat.js is deployed on Vercel and GROQ_API_KEY is set, then redeploy. Your test, score and review are unaffected.';
@@ -1386,7 +1415,7 @@ async function sendAiMessage(text){
     try{ data=JSON.parse(raw); }catch(e){ data=null; }
     if(!res.ok){
       var serverMsg=(data && (data.error || data.message)) ? String(data.error||data.message) : '';
-      throw {status:res.status, serverMsg:serverMsg};
+      throw {status:res.status, serverMsg:serverMsg, rawBody:raw};
     }
     var reply='';
     if(data){
@@ -1400,7 +1429,7 @@ async function sendAiMessage(text){
     if(loadingEl) loadingEl.remove();
     var status=(err && err.status) ? err.status : 0;
     var serverMsg=(err && err.serverMsg) ? err.serverMsg : '';
-    var friendly=aiBackendErrorMessage(status, serverMsg);
+    var friendly=aiBackendErrorMessage(status, serverMsg, (err && err.rawBody) ? err.rawBody : '');
     // Show the error ONCE — as a bubble in this (active) panel only. Do not also
     // fill the separate error box, and do not mirror it into the mini chat.
     showAiError('');
@@ -1619,7 +1648,7 @@ async function sendMiniMessage(raw){
     }
     var res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     var raw2=await res.text(); var data=null; try{ data=JSON.parse(raw2); }catch(e){ data=null; }
-    if(!res.ok){ var sm=(data && (data.error||data.message))?String(data.error||data.message):''; throw {status:res.status, serverMsg:sm}; }
+    if(!res.ok){ var sm=(data && (data.error||data.message))?String(data.error||data.message):''; throw {status:res.status, serverMsg:sm, rawBody:raw2}; }
     var reply=data ? (data.reply||data.message||data.answer||data.text||(data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)||'') : '';
     if(!reply) throw {status:res.status, serverMsg:'The backend replied without any message text.'};
     if(loading2) loading2.remove();
@@ -1629,7 +1658,7 @@ async function sendMiniMessage(raw){
   }catch(err){
     if(loading2) loading2.remove();
     var st=(err && err.status)?err.status:0; var sm2=(err && err.serverMsg)?err.serverMsg:'';
-    var friendly=(typeof aiBackendErrorMessage==='function') ? aiBackendErrorMessage(st, sm2) : (st===400 ? ('QuizMate couldn\'t use that request: '+(sm2||'Bad request')+' Your test and files are unaffected.') : 'QuizMate backend not configured yet — deploy /api/chat on Vercel with GROQ_API_KEY. Your test and files are unaffected.');
+    var friendly=(typeof aiBackendErrorMessage==='function') ? aiBackendErrorMessage(st, sm2, (err && err.rawBody) ? err.rawBody : '') : (st===400 ? ('QuizMate couldn\'t use that request: '+(sm2||'Bad request')+' Your test and files are unaffected.') : (st===404 && sm2 ? ('QuizMate couldn\'t reply: '+sm2+' Your test and files are unaffected.') : 'QuizMate backend not configured yet — deploy /api/chat on Vercel with GROQ_API_KEY. Your test and files are unaffected.'));
     addMiniMessage('error', friendly);
   }finally{ miniSending=false; if(sb2){ sb2.disabled=false; sb2.textContent='Send →'; } }
 }
@@ -1747,7 +1776,7 @@ async function generateMcqs(overrideCount, opts){
     try{ data=JSON.parse(raw); }catch(e){ data=null; }
     if(!res.ok){
       var serverMsg=(data && (data.error || data.message)) ? String(data.error||data.message) : '';
-      throw {status:res.status, serverMsg:serverMsg};
+      throw {status:res.status, serverMsg:serverMsg, rawBody:raw};
     }
     var gen=questionsFromAiData(data);
     if(!gen || !gen.length) throw {plain:'QuizMate replied, but its answer didn\'t contain usable questions in the expected format. Try again, or pick a smaller question count.'};
@@ -1776,7 +1805,7 @@ async function generateMcqs(overrideCount, opts){
     else{
       var status2=(err && err.status) ? err.status : 0;
       var serverMsg2=(err && err.serverMsg) ? err.serverMsg : '';
-      var friendlyGen=aiBackendErrorMessage(status2, serverMsg2);
+      var friendlyGen=aiBackendErrorMessage(status2, serverMsg2, (err && err.rawBody) ? err.rawBody : '');
       if(fromChat){ lastGenerateError=friendlyGen; } else { showBoxError('aiGenError', friendlyGen); }
     }
     if(status && !fromChat) status.textContent='';
@@ -1809,7 +1838,7 @@ async function sendContentChat(text){
     try{ data=JSON.parse(raw); }catch(e){ data=null; }
     if(!res.ok){
       var serverMsg=(data && (data.error || data.message)) ? String(data.error||data.message) : '';
-      throw {status:res.status, serverMsg:serverMsg};
+      throw {status:res.status, serverMsg:serverMsg, rawBody:raw};
     }
     var reply='';
     if(data){
@@ -1823,7 +1852,7 @@ async function sendContentChat(text){
     if(loadingEl) loadingEl.remove();
     var status=(err && err.status) ? err.status : 0;
     var serverMsg2=(err && err.serverMsg) ? err.serverMsg : '';
-    var friendly=aiBackendErrorMessage(status, serverMsg2);
+    var friendly=aiBackendErrorMessage(status, serverMsg2, (err && err.rawBody) ? err.rawBody : '');
     // Show the error ONCE — as a bubble in this (active) home panel only.
     showBoxError('aiContentError','');
     appendChatMsg(box,'error',friendly);
