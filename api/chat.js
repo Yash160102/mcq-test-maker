@@ -8,6 +8,15 @@
  *      add  GROQ_API_KEY  with your Groq key (from console.groq.com).
  *   3. Redeploy the project.
  *
+ * MODELS (Groq):
+ *   Default primary:  openai/gpt-oss-120b
+ *   Fallbacks, in order: meta-llama/llama-4-scout-17b-16e-instruct,
+ *      then qwen/qwen3-32b
+ *   Override the primary only by setting the optional GROQ_MODEL
+ *   env var in Vercel; the fallbacks above are then tried after it.
+ *   The old defaults llama-3.3-70b-versatile / llama-3.1-8b-instant
+ *   are NOT used: Groq returns 404 for them on many free-tier keys.
+ *
  * The key is read only from process.env on the server. It is never
  * hardcoded and never sent to the browser.
  *
@@ -109,13 +118,67 @@
  *       generate mode — no valid question could be produced)
  *   405 method not allowed (POST only)
  *   500 { error: "Missing GROQ_API_KEY" } if the key is not set
- *   5xx if Groq itself fails or times out
+ *   502 if Groq itself fails or times out — including Groq 401,
+ *       403 and 404, which are ALWAYS mapped to 502. This function
+ *       never returns 404 itself: a Groq 404 means the model does
+ *       not exist / the key has no access to it, NOT that this
+ *       Vercel function is missing, so passing 404 through would
+ *       make the frontend report "api/chat.js isn't deployed".
+ *   Other Groq errors keep their status (429, 500, ...) or 502.
+ *   Groq failures are logged (model, status, message — never the
+ *   key or the request body) so Vercel Functions logs show them.
  * ------------------------------------------------------------------
  */
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
-const PRIMARY_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
-const FALLBACK_MODEL = "llama-3.1-8b-instant";
+// GROQ_MODEL (env, optional) overrides the primary model only.
+const PRIMARY_MODEL = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
+const FALLBACK_MODELS = [
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "qwen/qwen3-32b",
+];
+const FALLBACK_MODEL = FALLBACK_MODELS[0];
+const GROQ_MODELS = [...new Set([PRIMARY_MODEL, ...FALLBACK_MODELS])];
+
+function logGroqFailure(model, status, message) {
+  // Model, status and Groq's message only — never the API key,
+  // never the request body / uploaded content.
+  console.error(
+    `[chat] Groq failure model=${model} status=${status} ` +
+      `message=${String(message || "").slice(0, 500)}`
+  );
+}
+
+// Map a Groq error to this function's response. NEVER 404:
+// Groq 401/403/404 all become 502, so a dead / inaccessible model
+// cannot be misread as "the /api/chat function isn't deployed".
+function groqFailure(status, groqMessage, model) {
+  const said = groqMessage ? ` Groq said: ${groqMessage}` : "";
+  if (status === 404) {
+    return {
+      status: 502,
+      detail:
+        "Groq returned 404: the configured model does not exist " +
+        "or this key does not have access to it. Try setting " +
+        "GROQ_MODEL to a currently available Groq model and " +
+        `redeploying. (model: ${model})${said}`,
+    };
+  }
+  if (status === 401 || status === 403) {
+    return {
+      status: 502,
+      detail:
+        `Groq returned ${status}: this key does not have access ` +
+        "to the configured model, or the key is invalid. Try " +
+        "setting GROQ_MODEL to a currently available Groq model " +
+        `and redeploying. (model: ${model})${said}`,
+    };
+  }
+  return {
+    status: status === 404 ? 502 : status,
+    detail: groqMessage || `Groq request failed (${status}).`,
+  };
+}
 const CONTENT_LIMIT = 12000; // chars of uploaded content per request
 const MAX_GENERATE_COUNT = 20;
 
@@ -445,10 +508,11 @@ async function callGroq(apiKey, model, messages, opts = {}) {
   }
 }
 
-// Tries the primary model, then the fallback once. Returns either
+// Tries each model in GROQ_MODELS in order. Returns either
 // { reply } or { status, detail } describing the last failure.
+// The returned status is never 404 (see groqFailure).
 async function askGroq(apiKey, messages, opts = {}) {
-  const models = [...new Set([PRIMARY_MODEL, FALLBACK_MODEL])];
+  const models = GROQ_MODELS;
   let lastStatus = 502;
   let lastDetail = "";
   for (const model of models) {
@@ -461,6 +525,7 @@ async function askGroq(apiKey, messages, opts = {}) {
         err && err.name === "AbortError"
           ? "Groq request timed out."
           : "Could not reach Groq.";
+      logGroqFailure(model, lastStatus, lastDetail);
       continue;
     }
     if (groqRes.ok) {
@@ -469,15 +534,19 @@ async function askGroq(apiKey, messages, opts = {}) {
       if (reply) return { reply };
       lastStatus = 502;
       lastDetail = "Groq returned an empty reply.";
+      logGroqFailure(model, lastStatus, lastDetail);
       continue;
     }
     const errBody = await groqRes.json().catch(() => null);
-    lastStatus =
-      groqRes.status === 401 || groqRes.status === 403 ? 502 : groqRes.status;
-    lastDetail =
+    const groqMsg =
       errBody?.error?.message || `Groq request failed (${groqRes.status}).`;
+    logGroqFailure(model, groqRes.status, groqMsg);
+    const mapped = groqFailure(groqRes.status, groqMsg, model);
+    lastStatus = mapped.status;
+    lastDetail = mapped.detail;
     if (![400, 404, 429, 500, 502, 503].includes(groqRes.status)) break;
   }
+  if (lastStatus === 404) lastStatus = 502;
   return { status: lastStatus, detail: lastDetail || "Groq request failed." };
 }
 
@@ -708,8 +777,8 @@ async function handleGenerate(req, res, apiKey, body) {
   };
 
   // Parse per model so a malformed reply from the primary model
-  // still gets a chance with the fallback model.
-  const models = [...new Set([PRIMARY_MODEL, FALLBACK_MODEL])];
+  // still gets a chance with the fallback models.
+  const models = GROQ_MODELS;
   let lastStatus = 502;
   let lastDetail = "";
   for (const model of models) {
@@ -722,14 +791,17 @@ async function handleGenerate(req, res, apiKey, body) {
         err && err.name === "AbortError"
           ? "Groq request timed out."
           : "Could not reach Groq.";
+      logGroqFailure(model, lastStatus, lastDetail);
       continue;
     }
     if (!groqRes.ok) {
       const errBody = await groqRes.json().catch(() => null);
-      lastStatus =
-        groqRes.status === 401 || groqRes.status === 403 ? 502 : groqRes.status;
-      lastDetail =
+      const groqMsg =
         errBody?.error?.message || `Groq request failed (${groqRes.status}).`;
+      logGroqFailure(model, groqRes.status, groqMsg);
+      const mapped = groqFailure(groqRes.status, groqMsg, model);
+      lastStatus = mapped.status;
+      lastDetail = mapped.detail;
       if (![400, 404, 429, 500, 502, 503].includes(groqRes.status)) break;
       continue;
     }
@@ -754,7 +826,9 @@ async function handleGenerate(req, res, apiKey, body) {
     }
     lastStatus = 502;
     lastDetail = "Groq returned an empty reply.";
+    logGroqFailure(model, lastStatus, lastDetail);
   }
+  if (lastStatus === 404) lastStatus = 502;
   if (lastDetail === "Groq returned an empty reply." || !lastDetail) {
     sendJson(res, 400, {
       error:
@@ -767,6 +841,9 @@ async function handleGenerate(req, res, apiKey, body) {
 }
 
 export default async function handler(req, res) {
+  // Invocation log (method only — no key, no body) so Vercel
+  // Functions logs show the function ran, even on failure.
+  console.log(`[chat] invocation method=${req.method || "?"}`);
   setCors(req, res);
   if (req.method === "OPTIONS") {
     res.status(204).end();
